@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SURVIVOR
+  VOLUNTEER
+  ADMIN
+}
+
+enum SOSStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CANCELLED
+}
+
+enum SOSType {
+  EARTHQUAKE
+  FLOOD
+  FIRE
+  MEDICAL
+  TRAPPED
+  OTHER
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model User {
+  id               String       @id @default(uuid())
+  name             String
+  phone            String       @unique
+  email            String       @unique
+  password         String
+  role             Role         @default(SURVIVOR)
+  fcmToken         String?
+  latitude         Float?
+  longitude        Float?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  refreshTokens    RefreshToken[]
+  sosRequests      SOSRequest[]
+  volunteerProfile Volunteer?
+
+  @@index([role])
+  @@index([latitude, longitude])
+}
+
+model SOSRequest {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  type        SOSType
+  description String?
+  latitude    Float
+  longitude   Float
+  severity    Severity   @default(MEDIUM)
+  status      SOSStatus  @default(PENDING)
+  imageUrl    String?
+  volunteer   Volunteer? @relation(fields: [volunteerId], references: [id])
+  volunteerId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([status])
+  @@index([userId])
+  @@index([volunteerId])
+  @@index([latitude, longitude])
+}
+
+model Volunteer {
+  id                String       @id @default(uuid())
+  userId            String       @unique
+  user              User         @relation(fields: [userId], references: [id])
+  isAvailable       Boolean      @default(true)
+  assignedRequests  SOSRequest[]
+  createdAt         DateTime     @default(now())
+
+  @@index([isAvailable])
+}
+
+model Shelter {
+  id        String   @id @default(uuid())
+  name      String
+  latitude  Float
+  longitude Float
+  capacity  Int
+  occupied  Int      @default(0)
+  address   String?
+  contact   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([latitude, longitude])
+}
+
+model Alert {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  severity  Severity
+  latitude  Float?
+  longitude Float?
+  radius    Float?
+  createdAt DateTime @default(now())
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
