@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const login = useAuthStore((state) => state.login);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -40,10 +45,13 @@ export default function LoginPage() {
     }
     setErrors({});
     setIsLoading(true);
-    // Simulate auth request
-    await new Promise((r) => setTimeout(r, 2000));
+    // Authenticate and redirect
+    await login(formData.identity, formData.password);
     setIsLoading(false);
     setSubmitStatus("success");
+    setTimeout(() => {
+      router.push("/dashboard");
+    }, 1500);
   };
 
   const handleChange = (field: string, value: string | boolean) => {
@@ -139,26 +147,7 @@ export default function LoginPage() {
         <div className="relative z-10 w-full p-8 md:p-12" style={{ paddingBottom: "48px" }}>
           {/* Logo */}
           <div className="flex items-center gap-3 mb-10">
-            <div
-              style={{
-                width: "44px",
-                height: "44px",
-                background: "#E53935",
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 4px 20px rgba(229,57,53,0.35)",
-              }}
-            >
-              <span
-                className="material-symbols-outlined"
-                style={{ color: "white", fontSize: "22px" }}
-                aria-hidden="true"
-              >
-                emergency_home
-              </span>
-            </div>
+            <Image src="/logo.png" alt="DisasterLink Logo" width={48} height={48} className="shrink-0 object-contain" />
             <div>
               <div style={{ color: "white", fontWeight: 700, fontSize: "18px", letterSpacing: "-0.02em" }}>
                 DisasterLink

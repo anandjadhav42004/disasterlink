@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, Phone, Mail, MapPin, ExternalLink } from "lucide-react";
+import Image from "next/image";
+import { Phone, Mail, MapPin, ExternalLink } from "lucide-react";
 
 export function Footer() {
   return (
@@ -11,9 +12,7 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded bg-primary-container">
-                <Shield className="h-5 w-5 text-on-primary" />
-              </div>
+              <Image src="/logo.png" alt="DisasterLink Logo" width={36} height={36} className="shrink-0 object-contain" />
               <div>
                 <span className="text-sm font-bold tracking-wide text-on-surface">
                   DISASTERLINK

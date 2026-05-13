@@ -1,15 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  Shield,
   LogOut,
   Bell,
   ChevronLeft,
   ChevronRight,
-  Sun,
-  Moon,
   Activity,
   AlertTriangle,
   Home,
@@ -24,7 +22,6 @@ import {
   ClipboardList,
   Navigation,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useNotificationStore } from "@/store/notification-store";
 import { useAuthStore } from "@/store/auth-store";
@@ -43,7 +40,6 @@ const iconMap: Record<string, React.ElementType> = {
   Map,
   UserCircle,
   Bell,
-  Shield,
   ClipboardList,
   Navigation,
 };
@@ -56,7 +52,6 @@ interface SidebarProps {
 
 export function Sidebar({ navItems, title, subtitle }: SidebarProps) {
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
   const { sidebarOpen, toggleSidebar, unreadCount } = useNotificationStore();
   const { user, logout } = useAuthStore();
 
@@ -72,9 +67,7 @@ export function Sidebar({ navItems, title, subtitle }: SidebarProps) {
         {/* Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-outline-variant bg-primary-container">
           <Link href="/" className="flex items-center gap-2.5 overflow-hidden">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-on-primary/10 border border-on-primary/20">
-              <Shield className="h-5 w-5 text-on-primary" />
-            </div>
+            <Image src="/logo.png" alt="DisasterLink Logo" width={36} height={36} className="shrink-0 object-contain" />
             {sidebarOpen && (
               <div className="flex flex-col min-w-0">
                 <span className="text-xs font-bold tracking-wide text-on-primary truncate">
@@ -154,18 +147,6 @@ export function Sidebar({ navItems, title, subtitle }: SidebarProps) {
 
         {/* Bottom */}
         <div className="border-t border-outline-variant p-2 space-y-1">
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="flex w-full items-center gap-3 px-3 py-2 rounded text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors"
-            title={!sidebarOpen ? "Toggle theme" : undefined}
-          >
-            {theme === "dark" ? (
-              <Sun className="h-5 w-5 shrink-0" />
-            ) : (
-              <Moon className="h-5 w-5 shrink-0" />
-            )}
-            {sidebarOpen && <span>Toggle Theme</span>}
-          </button>
 
           {user && sidebarOpen && (
             <div className="flex items-center gap-3 px-3 py-2 border-t border-outline-variant mt-1 pt-2">

@@ -1,26 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Shield,
   Menu,
   X,
   Bell,
-  Sun,
-  Moon,
   LogIn,
   ChevronDown,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { publicNav } from "@/constants/navigation";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -31,9 +27,7 @@ export function Navbar() {
       >
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded bg-on-primary/10 border border-on-primary/20 transition-colors group-hover:bg-on-primary/20">
-            <Shield className="h-5 w-5 text-on-primary" />
-          </div>
+          <Image src="/logo.png" alt="DisasterLink Logo" width={36} height={36} className="shrink-0 object-contain" />
           <div className="flex flex-col">
             <span className="text-sm font-bold tracking-wide text-on-primary leading-none">
               DISASTERLINK
@@ -67,17 +61,6 @@ export function Navbar() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="flex h-9 w-9 items-center justify-center rounded text-on-primary/70 hover:bg-on-primary/10 transition-colors"
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
-          </button>
 
           <Link
             href="/login"
