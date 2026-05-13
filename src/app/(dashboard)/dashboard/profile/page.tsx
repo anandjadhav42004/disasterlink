@@ -1,0 +1,78 @@
+"use client";
+
+export default function ProfilePage() {
+  return (
+    <main className="flex-grow max-w-[1440px] mx-auto w-full px-4 md:px-8 py-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left: Profile Info */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="border-l-4 border-primary pl-4 py-1">
+            <h1 className="text-headline-md text-on-surface">Citizen Profile</h1>
+            <p className="text-body-base text-on-surface-variant">Manage your personal details and emergency preferences.</p>
+          </div>
+
+          {/* Personal Info */}
+          <div className="bg-surface border border-outline-variant p-6 rounded-xl space-y-4">
+            <h3 className="text-title-sm text-on-surface flex items-center gap-2"><span className="material-symbols-outlined text-primary">person</span>Personal Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1"><label className="text-label-caps text-on-surface-variant">Full Name</label><input className="w-full p-4 border border-outline-variant rounded-lg focus:border-primary bg-surface-container-lowest text-body-base outline-none" defaultValue="Citizen John Doe" type="text"/></div>
+              <div className="flex flex-col gap-1"><label className="text-label-caps text-on-surface-variant">Agency Email</label><input className="w-full p-4 border border-outline-variant rounded-lg focus:border-primary bg-surface-container-lowest text-body-base outline-none" defaultValue="j.doe@citizen.gov" type="email"/></div>
+              <div className="flex flex-col gap-1"><label className="text-label-caps text-on-surface-variant">Phone Number</label><input className="w-full p-4 border border-outline-variant rounded-lg focus:border-primary bg-surface-container-lowest text-body-base outline-none" defaultValue="+1 (555) 014-2900" type="tel"/></div>
+              <div className="flex flex-col gap-1"><label className="text-label-caps text-on-surface-variant">Registered District</label><input className="w-full p-4 border border-outline-variant rounded-lg bg-surface-container-low text-body-base outline-none" defaultValue="Central Coastal District" readOnly type="text"/></div>
+            </div>
+          </div>
+
+          {/* Emergency Contact */}
+          <div className="bg-surface-container-low border border-outline-variant p-6 rounded-xl">
+            <div className="flex items-center gap-2 mb-4"><span className="material-symbols-outlined text-error">contact_emergency</span><h3 className="text-title-sm text-on-surface">Emergency Contact</h3></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1"><label className="text-label-caps text-on-surface-variant">Contact Name</label><input className="w-full p-4 border border-outline-variant rounded-lg focus:border-primary bg-surface-container-lowest text-body-base outline-none" defaultValue="Jane Doe" type="text"/></div>
+              <div className="flex flex-col gap-1"><label className="text-label-caps text-on-surface-variant">Relationship</label><select className="w-full p-4 border border-outline-variant rounded-lg focus:border-primary bg-surface-container-lowest text-body-base outline-none"><option>Spouse / Partner</option><option>Parent / Guardian</option></select></div>
+            </div>
+          </div>
+
+          {/* Notifications */}
+          <div className="bg-surface border border-outline-variant p-6 rounded-xl">
+            <h3 className="text-title-sm text-on-surface mb-4 flex items-center gap-2"><span className="material-symbols-outlined text-primary">notifications</span>Notification Preferences</h3>
+            <div className="space-y-3">
+              {[
+                { label: "Critical Alerts (Mandatory)", desc: "Evacuations, severe weather, and immediate threats.", locked: true },
+                { label: "Shelter Updates", desc: "Capacity changes and new shelter openings." },
+                { label: "Supply Delivery Tracking", desc: "Status updates on your relief requests." },
+              ].map((pref) => (
+                <label key={pref.label} className="flex items-start gap-3 p-3 bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container-high transition-colors">
+                  <input type="checkbox" defaultChecked className={`mt-1 w-5 h-5 rounded ${pref.locked ? "accent-error" : "accent-primary"}`} disabled={pref.locked} />
+                  <div><p className="text-body-base font-bold">{pref.label}</p><p className="text-body-sm text-on-surface-variant">{pref.desc}</p></div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end"><button className="bg-primary text-on-primary px-8 py-4 rounded-lg text-label-caps font-bold hover:opacity-90 transition-opacity flex items-center gap-2"><span className="material-symbols-outlined">save</span>Save Changes</button></div>
+        </div>
+
+        {/* Right: Status Cards */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="bg-primary text-on-primary p-6 rounded-xl">
+            <span className="material-symbols-outlined text-4xl mb-4 block">verified_user</span>
+            <h3 className="text-title-sm mb-2">Account Verified</h3>
+            <p className="text-body-sm opacity-90">Your identity has been confirmed through the National Emergency Registry. Last verified: May 10, 2024.</p>
+          </div>
+          <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl">
+            <h3 className="text-title-sm mb-4">Activity Summary</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center"><span className="text-body-sm text-on-surface-variant">Total Requests</span><span className="text-headline-md font-mono text-primary">12</span></div>
+              <div className="flex justify-between items-center"><span className="text-body-sm text-on-surface-variant">SOS Activations</span><span className="text-headline-md font-mono text-error">0</span></div>
+              <div className="flex justify-between items-center"><span className="text-body-sm text-on-surface-variant">Volunteer Hours</span><span className="text-headline-md font-mono text-tertiary">24</span></div>
+            </div>
+          </div>
+          <div className="bg-error-container border border-error p-6 rounded-xl">
+            <h3 className="text-title-sm text-on-error-container mb-2 flex items-center gap-2"><span className="material-symbols-outlined">warning</span>Danger Zone</h3>
+            <p className="text-body-sm text-on-error-container mb-4">Deactivating your account will remove you from emergency notification lists.</p>
+            <button className="w-full py-3 border border-error text-error rounded-lg text-label-caps hover:bg-error hover:text-on-error transition-colors">Deactivate Account</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
