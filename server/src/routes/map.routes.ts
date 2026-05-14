@@ -1,11 +1,14 @@
 import { Router } from "express";
 import { Role } from "@prisma/client";
-import { heatmap, liveMap, mapShelters } from "../controllers/map.controller.js";
+import { heatmap, liveMap, mapShelters, getHeatmap, getLive, getShelters } from "../controllers/map.controller.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { requireRole } from "../middleware/role.middleware.js";
 
-export const mapRouter = Router();
+const mapRoutes = Router();
 
-mapRouter.get("/shelters", mapShelters);
-mapRouter.get("/live", requireAuth, liveMap);
-mapRouter.get("/heatmap", requireAuth, requireRole(Role.ADMIN, Role.VOLUNTEER), heatmap);
+mapRoutes.get("/shelters", mapShelters);
+mapRoutes.get("/live", requireAuth, liveMap);
+mapRoutes.get("/heatmap", requireAuth, requireRole(Role.ADMIN, Role.VOLUNTEER), heatmap);
+
+export default mapRoutes;
+export { mapRoutes };

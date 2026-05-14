@@ -5,10 +5,13 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
+  const authError = useAuthStore((state) => state.error);
+  const clearError = useAuthStore((state) => state.clearError);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -48,33 +51,41 @@ export default function LoginPage() {
       return;
     }
     setErrors({});
-    setAuthError(null);
+    clearError();
     setIsLoading(true);
+    setAuthError(null);
 
-    const result = await login(formData.identity, formData.password);
+    try {
+      const result = await login(formData.identity, formData.password);
+      
+      if (result.success) {
+        // Map role to display label
+        const roleLabels: Record<string, string> = {
+          citizen: "Citizen Portal",
+          volunteer: "Volunteer Operations",
+          admin: "Admin Command Center",
+          district_admin: "District Admin Operations",
+          super_admin: "Super Admin Control",
+        };
+        setResolvedRole(roleLabels[useAuthStore.getState().role || "citizen"] || "Dashboard");
+        setSubmitStatus("success");
 
-    setIsLoading(false);
-
-    if (!result.success) {
+        setTimeout(() => {
+          router.push(result.redirectTo || "/dashboard");
+        }, 1200);
+      } else {
+        setIsLoading(false);
+        setSubmitStatus("error");
+        setAuthError(result.error || "Authentication failed. Access denied.");
+        toast.error(result.error || "Authentication failed. Please try again.");
+      }
+    } catch (err) {
+      setIsLoading(false);
       setSubmitStatus("error");
-      setAuthError(result.error || "Authentication failed. Access denied.");
-      return;
+      const message = "An unexpected error occurred. Please try again.";
+      setAuthError(message);
+      toast.error(message);
     }
-
-    // Map role to display label
-    const roleLabels: Record<string, string> = {
-      citizen: "Citizen Portal",
-      volunteer: "Volunteer Operations",
-      admin: "Admin Command Center",
-      district_admin: "District Admin Operations",
-      super_admin: "Super Admin Control",
-    };
-    setResolvedRole(roleLabels[useAuthStore.getState().role || "citizen"] || "Dashboard");
-    setSubmitStatus("success");
-
-    setTimeout(() => {
-      router.push(result.redirectTo || "/dashboard");
-    }, 1800);
   };
 
   const handleChange = (field: string, value: string | boolean) => {
@@ -326,6 +337,31 @@ export default function LoginPage() {
               Authorized personnel only. Federal access protocols active.
             </p>
           </header>
+
+          {/* Error state */}
+          {submitStatus === "error" && authError && (
+            <div
+              style={{
+                background: "#FFF5F5",
+                border: "1px solid #FECACA",
+                borderRadius: "12px",
+                padding: "14px 18px",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginBottom: "20px",
+              }}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ color: "#E53935", fontSize: "20px" }}
+                aria-hidden="true"
+              >
+                error
+              </span>
+              <p style={{ fontSize: "13px", color: "#B91C1C", margin: 0 }}>{authError}</p>
+            </div>
+          )}
 
           {/* Success state */}
           {submitStatus === "success" && (

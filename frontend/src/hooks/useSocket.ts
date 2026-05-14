@@ -11,12 +11,11 @@ export function useSocket() {
   useEffect(() => {
     if (!isAuthenticated || !user) {
       disconnectSocket();
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsConnected(false);
       return;
     }
 
-    const socket = connectSocket({ id: user.id, role });
+    const socket = connectSocket({ id: user.id, role: role || "citizen" });
     if (!socket) return;
 
     const handleConnect = () => setIsConnected(true);
@@ -26,9 +25,31 @@ export function useSocket() {
     socket.on("disconnect", handleDisconnect);
     setIsConnected(socket.connected);
 
+    // Friend's specific event listeners
+    socket.on('new-sos', (data) => {
+      console.log('New SOS:', data);
+      window.dispatchEvent(new CustomEvent('new-sos', { detail: data }));
+    });
+    socket.on('map-update', (data) => {
+      window.dispatchEvent(new CustomEvent('map-update', { detail: data }));
+    });
+    socket.on('volunteer-assigned', (data) => {
+      window.dispatchEvent(new CustomEvent('volunteer-assigned', { detail: data }));
+    });
+    socket.on('emergency-alert', (data) => {
+      window.dispatchEvent(new CustomEvent('emergency-alert', { detail: data }));
+    });
+    socket.on('sos-status-update', (data) => {
+      window.dispatchEvent(new CustomEvent('sos-status-update', { detail: data }));
+    });
+    socket.on('rescue-completed', (data) => {
+      window.dispatchEvent(new CustomEvent('rescue-completed', { detail: data }));
+    });
+
     return () => {
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
+      disconnectSocket();
     };
   }, [isAuthenticated, role, user]);
 
@@ -42,7 +63,12 @@ export function useSocket() {
           socket.off(event, handler);
         };
       },
-      emit: (event: string, payload?: unknown) => socket.emit(event, payload)
+      emit: (event: string, payload?: unknown) => {
+        const socket = getSocket();
+        if (socket.connected) {
+          socket.emit(event, payload);
+        }
+      }
     };
   }, []);
 

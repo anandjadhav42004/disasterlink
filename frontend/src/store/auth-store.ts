@@ -1,21 +1,24 @@
 import { create } from "zustand";
-import type { User, UserRole } from "@/types";
+import type { UserRole } from "@/types";
 import type { Permission } from "@/lib/permissions";
-import {
-  authenticateUser,
-  persistSession,
-  getPersistedSession,
-  clearSession,
-} from "@/lib/auth";
 import { getPermissionsForRole, ROLE_REDIRECT } from "@/lib/permissions";
+import { authService } from "@/services";
 
-// ============================================
-// Auth Store Interface
-// ============================================
+// Mirror what the backend returns
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: UserRole;
+  latitude: number | null;
+  longitude: number | null;
+  isVerified?: boolean;
+  createdAt?: string;
+}
+
 interface AuthState {
-  // State
-  user: User | null;
-  token: string | null;
+  user: AuthUser | null;
   role: UserRole | null;
   permissions: Permission[];
   isAuthenticated: boolean;
@@ -23,150 +26,157 @@ interface AuthState {
   isHydrated: boolean;
   error: string | null;
 
-  // Actions
   login: (email: string, password: string) => Promise<{ success: boolean; redirectTo?: string; error?: string }>;
-  register: (data: { name: string; email: string; role: UserRole }) => Promise<void>;
-  logout: () => void;
-  setUser: (user: User) => void;
+  register: (payload: {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    role?: string;
+  }) => Promise<void>;
+  logout: () => Promise<void>;
+  fetchMe: () => Promise<void>;
   hydrate: () => void;
   clearError: () => void;
   hasPermission: (permission: Permission) => boolean;
 }
 
-// ============================================
-// Zustand Auth Store
-// ============================================
+// ── helpers ──────────────────────────────────────────────
+const isBrowser = typeof window !== "undefined";
+
+function getStoredToken() {
+  return isBrowser ? localStorage.getItem("dl_token") : null;
+}
+
+function setTokens(access: string, refresh: string) {
+  if (!isBrowser) return;
+  localStorage.setItem("dl_token", access);
+  localStorage.setItem("dl_refresh_token", refresh);
+}
+
+function clearTokens() {
+  if (!isBrowser) return;
+  localStorage.removeItem("dl_token");
+  localStorage.removeItem("dl_refresh_token");
+}
+
+function extractMessage(err: unknown, fallback: string): string {
+  if (typeof err === "object" && err !== null && "response" in err) {
+    const r = (err as { response?: { data?: { message?: string } } }).response;
+    return r?.data?.message ?? fallback;
+  }
+  return fallback;
+}
+// ─────────────────────────────────────────────────────────
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-  // Initial state — not authenticated until hydration
   user: null,
-  token: null,
   role: null,
   permissions: [],
-  isAuthenticated: false,
+  isAuthenticated: !!getStoredToken(),
   isLoading: false,
   isHydrated: false,
   error: null,
 
-  /**
-   * Login: validates credentials, persists session, resolves redirect path.
-   */
-  login: async (email: string, password: string) => {
-    set({ isLoading: true, error: null });
-
-    const result = await authenticateUser(email, password);
-
-    if (!result.success || !result.user || !result.token) {
-      set({
-        isLoading: false,
-        error: result.error || "Authentication failed.",
-        isAuthenticated: false,
-        user: null,
-        token: null,
-        role: null,
-        permissions: [],
-      });
-      return { success: false, error: result.error };
-    }
-
-    const permissions = getPermissionsForRole(result.user.role);
-
-    // Persist to localStorage
-    persistSession(result.token, result.user, result.refreshToken);
-
-    set({
-      user: result.user,
-      token: result.token,
-      role: result.user.role,
-      permissions,
-      isAuthenticated: true,
-      isLoading: false,
-      error: null,
-    });
-
-    return {
-      success: true,
-      redirectTo: result.redirectTo || ROLE_REDIRECT[result.user.role],
-    };
-  },
-
-  /**
-   * Register: creates a new citizen account (mock).
-   */
-  register: async (data) => {
-    set({ isLoading: true, error: null });
-    await new Promise((r) => setTimeout(r, 1500));
-    const newUser: User = {
-      id: `USR-${Date.now()}`,
-      name: data.name,
-      email: data.email,
-      role: data.role || "citizen",
-      isVerified: false,
-      createdAt: new Date().toISOString(),
-      permissions: getPermissionsForRole(data.role || "citizen"),
-    };
-    set({
-      user: newUser,
-      role: newUser.role,
-      permissions: getPermissionsForRole(newUser.role),
-      isAuthenticated: true,
-      isLoading: false,
-    });
-  },
-
-  /**
-   * Logout: clears all session data.
-   */
-  logout: () => {
-    clearSession();
-    set({
-      user: null,
-      token: null,
-      role: null,
-      permissions: [],
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
-    });
-  },
-
-  /**
-   * Set user data directly (for profile updates etc).
-   */
-  setUser: (user) => {
-    set({
-      user,
-      role: user.role,
-      permissions: getPermissionsForRole(user.role),
-    });
-  },
-
-  /**
-   * Hydrate: restores session from localStorage on app mount.
-   */
-  hydrate: () => {
-    const session = getPersistedSession();
-    if (session) {
-      set({
-        user: session.user,
-        token: session.token,
-        role: session.user.role,
-        permissions: getPermissionsForRole(session.user.role),
-        isAuthenticated: true,
-        isHydrated: true,
-      });
-    } else {
-      set({ isHydrated: true });
-    }
-  },
-
-  /**
-   * Clear error state.
-   */
   clearError: () => set({ error: null }),
 
-  /**
-   * Check if the current user has a specific permission.
-   */
+  // ── Login ────────────────────────────────────────────
+  login: async (email, password) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data } = await authService.login({ email, password });
+      const { user, accessToken, refreshToken } = data.data;
+      setTokens(accessToken, refreshToken);
+      
+      const role = user.role as UserRole;
+      const permissions = getPermissionsForRole(role);
+
+      set({
+        user,
+        role,
+        permissions,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+
+      return {
+        success: true,
+        redirectTo: ROLE_REDIRECT[role],
+      };
+    } catch (err) {
+      const message = extractMessage(err, "Login failed. Please check your credentials.");
+      set({ isLoading: false, error: message, isAuthenticated: false });
+      return { success: false, error: message };
+    }
+  },
+
+  // ── Register ─────────────────────────────────────────
+  register: async (payload) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { data } = await authService.register(payload);
+      const { user, accessToken, refreshToken } = data.data;
+      setTokens(accessToken, refreshToken);
+      
+      const role = user.role as UserRole;
+      const permissions = getPermissionsForRole(role);
+
+      set({
+        user,
+        role,
+        permissions,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch (err) {
+      const message = extractMessage(err, "Registration failed. Please try again.");
+      set({ isLoading: false, error: message, isAuthenticated: false });
+      throw err;
+    }
+  },
+
+  // ── Logout ───────────────────────────────────────────
+  logout: async () => {
+    const refreshToken = isBrowser ? localStorage.getItem("dl_refresh_token") : null;
+    try {
+      if (refreshToken) await authService.logout({ refreshToken });
+    } catch {
+      // ignore server errors — always clear client state
+    } finally {
+      clearTokens();
+      set({ user: null, role: null, permissions: [], isAuthenticated: false });
+    }
+  },
+
+  // ── Hydrate from token on app load ───────────────────
+  fetchMe: async () => {
+    if (!getStoredToken()) return;
+    set({ isLoading: true });
+    try {
+      const { data } = await authService.me();
+      const user = data.data;
+      const role = user.role as UserRole;
+      set({
+        user,
+        role,
+        permissions: getPermissionsForRole(role),
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch {
+      clearTokens();
+      set({ user: null, role: null, permissions: [], isAuthenticated: false, isLoading: false });
+    }
+  },
+
+  hydrate: () => {
+    // Basic hydration check - fetchMe handles the actual data restoration
+    if (getStoredToken()) {
+      get().fetchMe();
+    }
+    set({ isHydrated: true });
+  },
+
   hasPermission: (permission: Permission) => {
     const { permissions } = get();
     return permissions.includes(permission);

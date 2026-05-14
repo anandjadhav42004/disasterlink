@@ -1,42 +1,111 @@
 import api from "./api";
 
 // ============================================
-// INCIDENT SERVICE
+// AUTH SERVICE
 // ============================================
-export const incidentService = {
-  getAll: async (params?: { status?: string; severity?: string; page?: number }) =>
-    api.get("/incidents", { params }),
-  getById: async (id: string) => api.get(`/incidents/${id}`),
-  create: async (data: Record<string, unknown>) => api.post("/incidents", data),
-  update: async (id: string, data: Record<string, unknown>) => api.patch(`/incidents/${id}`, data),
-  delete: async (id: string) => api.delete(`/incidents/${id}`),
-  getTimeline: async (id: string) => api.get(`/incidents/${id}/timeline`),
+export const authService = {
+  register: async (data: {
+    name: string;
+    phone: string;
+    email: string;
+    password: string;
+    role?: string;
+  }) => api.post("/auth/register", data),
+
+  login: async (data: { email: string; password: string }) =>
+    api.post("/auth/login", data),
+
+  refresh: async (data: { refreshToken: string }) =>
+    api.post("/auth/refresh", data),
+
+  verifyOtp: async (data: { userId?: string; otp?: string }) =>
+    api.post("/auth/verify-otp", data),
+
+  logout: async (data?: { refreshToken?: string }) =>
+    api.post("/auth/logout", data ?? {}),
+
+  me: async () => api.get("/auth/me"),
+
+  updateFcmToken: async (data: { fcmToken: string }) =>
+    api.patch("/auth/fcm-token", data),
 };
 
 // ============================================
-// ALERT SERVICE
+// SOS SERVICE
 // ============================================
-export const alertService = {
-  getAll: async (params?: { severity?: string; status?: string }) =>
-    api.get("/alerts", { params }),
-  getById: async (id: string) => api.get(`/alerts/${id}`),
-  broadcast: async (data: Record<string, unknown>) => api.post("/alerts/broadcast", data),
-  dismiss: async (id: string) => api.patch(`/alerts/${id}/dismiss`),
+export const sosService = {
+  // data must be FormData when sending an image, plain object otherwise
+  create: async (data: FormData | Record<string, unknown>) =>
+    api.post("/sos/create", data, {
+      headers:
+        data instanceof FormData
+          ? { "Content-Type": "multipart/form-data" }
+          : { "Content-Type": "application/json" },
+    }),
+
+  submit: async (data: Record<string, unknown>) => api.post("/sos/create", data),
+
+  nearby: async (params: { lat: number; lng: number; radius?: number }) =>
+    api.get("/sos/nearby", { params }),
+
+  getNearby: async (params: { latitude: number; longitude: number; radiusKm?: number }) =>
+    api.get("/sos/nearby", { params }),
+
+  myRequests: async () => api.get("/sos/my"),
+  getMyRequests: async () => api.get("/sos/my"),
+
+  getById: async (id: string) => api.get(`/sos/${id}`),
+
+  updateStatus: async (id: string, data: { status: string } | string) => {
+    const payload = typeof data === "string" ? { status: data } : data;
+    return api.patch(`/sos/${id}/status`, payload);
+  },
 };
 
 // ============================================
 // SHELTER SERVICE
 // ============================================
 export const shelterService = {
-  getAll: async (params?: { status?: string; district?: string }) =>
-    api.get("/shelters", { params }),
+  nearby: async (params?: { lat?: number; lng?: number; radius?: number }) =>
+    api.get("/shelters/nearby", { params }),
+
   getNearby: async (params: { latitude: number; longitude: number; radiusKm?: number }) =>
     api.get("/shelters/nearby", { params }),
+
+  getAll: async (params?: { status?: string; district?: string }) =>
+    api.get("/shelters", { params }),
+
   getById: async (id: string) => api.get(`/shelters/${id}`),
-  create: async (data: Record<string, unknown>) => api.post("/shelters", data),
-  update: async (id: string, data: Record<string, unknown>) => api.patch(`/shelters/${id}`, data),
+
+  create: async (data: Record<string, unknown>) =>
+    api.post("/shelters", data),
+
+  update: async (id: string, data: Record<string, unknown>) => 
+    api.patch(`/shelters/${id}`, data),
+
+  updateOccupancy: async (id: string, data: { occupied: number }) =>
+    api.patch(`/shelters/${id}/occupancy`, data),
+
   updateCapacity: async (id: string, data: { current: number }) =>
     api.patch(`/shelters/${id}/capacity`, data),
+};
+
+// ============================================
+// ALERT SERVICE
+// ============================================
+export const alertService = {
+  getAll: async () => api.get("/alerts"),
+
+  create: async (data: {
+    title: string;
+    message: string;
+    severity: string;
+    latitude?: number;
+    longitude?: number;
+    radius?: number;
+  }) => api.post("/alerts", data),
+
+  delete: async (id: string) => api.delete(`/alerts/${id}`),
 };
 
 // ============================================
@@ -44,49 +113,35 @@ export const shelterService = {
 // ============================================
 export const volunteerService = {
   getTasks: async () => api.get("/volunteer/tasks"),
+
+  acceptTask: async (id: string) => api.post(`/volunteer/accept/${id}`),
+  accept: async (id: string) => api.post(`/volunteer/accept/${id}`),
+
+  completeTask: async (id: string) => api.post(`/volunteer/complete/${id}`),
+  complete: async (id: string) => api.post(`/volunteer/complete/${id}`),
+
+  updateAvailability: async (data: { isAvailable: boolean } | boolean) => {
+    const payload = typeof data === "boolean" ? { isAvailable: data } : data;
+    return api.patch("/volunteer/availability", payload);
+  },
+
   getStats: async () => api.get("/volunteer/stats"),
-  accept: async (sosId: string) => api.post(`/volunteer/accept/${sosId}`),
-  complete: async (sosId: string) => api.post(`/volunteer/complete/${sosId}`),
-  updateAvailability: async (isAvailable: boolean) =>
-    api.patch("/volunteer/availability", { isAvailable }),
 };
 
 // ============================================
-// SOS SERVICE
+// ADMIN SERVICE
 // ============================================
-export const sosService = {
-  submit: async (data: Record<string, unknown>) => api.post("/sos/create", data),
-  getMyRequests: async () => api.get("/sos/my"),
-  getNearby: async (params: { latitude: number; longitude: number; radiusKm?: number }) =>
-    api.get("/sos/nearby", { params }),
-  getById: async (id: string) => api.get(`/sos/${id}`),
-  updateStatus: async (id: string, status: string) => api.patch(`/sos/${id}/status`, { status }),
-};
+export const adminService = {
+  getAnalytics: async () => api.get("/admin/analytics"),
 
-// ============================================
-// ANALYTICS SERVICE
-// ============================================
-export const analyticsService = {
-  getDashboard: async () => api.get("/analytics/dashboard"),
-  getIncidentTrends: async (params?: { period?: string }) =>
-    api.get("/analytics/incidents/trends", { params }),
-  getResponseMetrics: async () => api.get("/analytics/response-metrics"),
-  getResourceAllocation: async () => api.get("/analytics/resources"),
-  exportReport: async (params: { format: string; dateRange?: string }) =>
-    api.get("/analytics/export", { params, responseType: "blob" }),
-};
+  getIncidents: async () => api.get("/admin/incidents"),
 
-// ============================================
-// AUTH SERVICE
-// ============================================
-export const authService = {
-  login: async (data: { email: string; password: string }) => api.post("/auth/login", data),
-  register: async (data: Record<string, unknown>) => api.post("/auth/register", data),
-  verifyOtp: async (data: { email: string; code: string }) => api.post("/auth/verify", data),
-  resendOtp: async (email: string) => api.post("/auth/resend-otp", { email }),
-  logout: async () => api.post("/auth/logout"),
-  getProfile: async () => api.get("/auth/profile"),
-  updateProfile: async (data: Record<string, unknown>) => api.patch("/auth/profile", data),
+  getVolunteers: async () => api.get("/admin/volunteers"),
+
+  broadcast: async (data: Record<string, unknown>) =>
+    api.post("/admin/broadcast", data),
+
+  getHeatmap: async () => api.get("/admin/heatmap"),
 };
 
 // ============================================

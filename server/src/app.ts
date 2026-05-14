@@ -4,7 +4,7 @@ import compression from "compression";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-import { apiRateLimiter } from "./middleware/rateLimit.middleware.js";
+import rateLimit from "express-rate-limit";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.middleware.js";
 import { logger } from "./utils/logger.js";
 import { authRouter } from "./routes/auth.routes.js";
@@ -19,13 +19,43 @@ import { initSocket } from "./sockets/index.js";
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
+
+const apiRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many requests from this IP, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? true, credentials: true }));
+app.use(
+  cors({
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin) return callback(null, true);
+      if (allowedOrigins.includes(requestOrigin) || allowedOrigins.includes("*")) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(compression());
 app.use(express.json({ limit: "1mb" }));
 app.use(apiRateLimiter);
 
-app.get("/health", (_req, res) => res.json({ success: true, status: "ok", service: "disasterlink-api" }));
+// Request logging middleware
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.path}`, { ip: req.ip, userAgent: req.get("user-agent") });
+  next();
+});
+
+app.get("/health", (_req, res) => res.json({ success: true, status: "ok", timestamp: new Date(), uptime: process.uptime() }));
 app.use("/api/auth", authRouter);
 app.use("/api/sos", sosRouter);
 app.use("/api/volunteer", volunteerRouter);

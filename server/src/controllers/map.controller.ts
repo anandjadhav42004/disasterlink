@@ -12,6 +12,11 @@ const mapShelterQuerySchema = z.object({
   { message: "latitude and longitude must be provided together" }
 );
 
+// Aliases for compatibility with other routes/versions
+export const getLive = liveMap;
+export const getShelters = mapShelters;
+export const getHeatmap = heatmap;
+
 export async function liveMap(_req: Request, res: Response) {
   return sendSuccess(res, await getLiveMapData(), "Live map loaded");
 }

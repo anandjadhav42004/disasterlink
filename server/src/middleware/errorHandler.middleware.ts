@@ -18,10 +18,12 @@ export function notFoundHandler(req: Request, res: Response) {
 
 export function errorHandler(error: unknown, _req: Request, res: Response, _next: NextFunction) {
   if (error instanceof ZodError) {
-    return sendError(res, "Validation failed", 422, error.flatten());
+    logger.error("Validation error", { error: error.flatten() });
+    return sendError(res, "Validation failed", 422);
   }
 
   if (error instanceof AppError) {
+    logger.error("Application error", { message: error.message, statusCode: error.statusCode });
     return sendError(res, error.message, error.statusCode);
   }
 
