@@ -13,7 +13,18 @@ export const createShelterSchema = z.object({
   capacity: z.coerce.number().int().positive(),
   occupied: z.coerce.number().int().min(0).default(0),
   address: z.string().optional(),
-  contact: z.string().optional()
+  contact: z.string().optional(),
+  district: z.string().optional(),
+  state: z.string().optional(),
+  status: z.string().optional(),
+  resources: z.record(z.unknown()).optional(),
+  emergencyCapacity: z.boolean().optional()
+});
+
+export const updateShelterSchema = createShelterSchema.partial().extend({
+  occupied: z.coerce.number().int().min(0).optional(),
+  capacity: z.coerce.number().int().positive().optional(),
+  emergencyCapacity: z.boolean().optional()
 });
 
 export const occupancySchema = z.object({

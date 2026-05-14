@@ -25,6 +25,9 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     });
 
     if (!user) return sendError(res, "User not found", 401);
+    if (user.status === "suspended" || user.deactivatedAt) {
+      return sendError(res, "Account is not active", 403);
+    }
 
     const roles = [
       ...user.roles.map((entry) => entry.role),

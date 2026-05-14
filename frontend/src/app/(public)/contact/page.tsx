@@ -1,8 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
+import { contactService } from "@/services";
 
 export default function ContactPage() {
+  const [form, setForm] = useState({ agency: "", name: "", email: "", subject: "Asset Deployment Request", message: "" });
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const response = await contactService.submit({ name: `${form.agency} - ${form.name}`, email: form.email, subject: form.subject, message: form.message });
+    toast.success("Inquiry submitted", { description: `Ticket ${response.data.data.inquiry.ticketId} generated.` });
+    setForm({ agency: "", name: "", email: "", subject: "Asset Deployment Request", message: "" });
+  };
+
   return (
     <div className="min-h-screen bg-background text-on-surface">
       <main className="max-w-[1440px] mx-auto px-6 py-8">
@@ -49,25 +61,25 @@ export default function ContactPage() {
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
           <div className="lg:col-span-7 bg-surface border border-outline-variant rounded-xl p-8">
             <h3 className="text-headline-md text-primary mb-4">Operational Inquiry Form</h3>
-            <form className="space-y-4">
+            <form onSubmit={submit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
                   <label className="text-label-caps text-on-surface-variant">Agency Name</label>
-                  <input className="bg-surface-container-low border border-outline-variant focus:border-primary rounded px-4 py-2 text-body-base outline-none transition-colors" placeholder="e.g., Red Cross International" type="text"/>
+                  <input value={form.agency} onChange={(e) => setForm({ ...form, agency: e.target.value })} className="bg-surface-container-low border border-outline-variant focus:border-primary rounded px-4 py-2 text-body-base outline-none transition-colors" placeholder="e.g., Red Cross International" type="text"/>
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-label-caps text-on-surface-variant">Contact Person</label>
-                  <input className="bg-surface-container-low border border-outline-variant focus:border-primary rounded px-4 py-2 text-body-base outline-none transition-colors" placeholder="Full legal name" type="text"/>
+                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-surface-container-low border border-outline-variant focus:border-primary rounded px-4 py-2 text-body-base outline-none transition-colors" placeholder="Full legal name" type="text"/>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
                   <label className="text-label-caps text-on-surface-variant">Official Email</label>
-                  <input className="bg-surface-container-low border border-outline-variant focus:border-primary rounded px-4 py-2 text-body-base outline-none transition-colors" placeholder="user@agency.gov" type="email"/>
+                  <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="bg-surface-container-low border border-outline-variant focus:border-primary rounded px-4 py-2 text-body-base outline-none transition-colors" placeholder="user@agency.gov" type="email"/>
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-label-caps text-on-surface-variant">Inquiry Type</label>
-                  <select className="bg-surface-container-low border border-outline-variant focus:border-primary rounded px-4 py-2 text-body-base outline-none transition-colors">
+                  <select value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="bg-surface-container-low border border-outline-variant focus:border-primary rounded px-4 py-2 text-body-base outline-none transition-colors">
                     <option>Asset Deployment Request</option>
                     <option>Data Sharing Agreement</option>
                     <option>Joint Training Exercise</option>
@@ -77,7 +89,7 @@ export default function ContactPage() {
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-label-caps text-on-surface-variant">Detailed Message</label>
-                <textarea className="bg-surface-container-low border border-outline-variant focus:border-primary rounded px-4 py-2 text-body-base outline-none transition-colors" placeholder="Describe the operational requirement..." rows={5}/>
+                <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} className="bg-surface-container-low border border-outline-variant focus:border-primary rounded px-4 py-2 text-body-base outline-none transition-colors" placeholder="Describe the operational requirement..." rows={5}/>
               </div>
               <div className="flex justify-end mt-4">
                 <button className="bg-primary text-on-primary font-bold px-8 py-4 rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity" type="submit">Submit Formal Inquiry <span className="material-symbols-outlined">send</span></button>
@@ -95,7 +107,7 @@ export default function ContactPage() {
                   <li className="flex items-center gap-2 text-body-base"><span className="material-symbols-outlined text-primary">verified_user</span>Accreditation Portal</li>
                 </ul>
               </div>
-              <button className="w-full border-2 border-primary text-primary font-bold py-4 rounded-lg hover:bg-primary-container/10 transition-colors">View Partner Portal</button>
+              <Link href="/login" className="w-full border-2 border-primary text-primary font-bold py-4 rounded-lg hover:bg-primary-container/10 transition-colors text-center">View Partner Portal</Link>
             </div>
             <div className="relative rounded-xl overflow-hidden h-64 border border-outline-variant">
               <div className="w-full h-full bg-gradient-to-br from-primary-container/60 via-surface-dim to-inverse-surface"/>

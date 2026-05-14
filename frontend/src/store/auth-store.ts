@@ -18,6 +18,9 @@ export interface AuthUser {
   modules?: string[];
   latitude: number | null;
   longitude: number | null;
+  district?: string | null;
+  state?: string | null;
+  country?: string | null;
   isVerified?: boolean;
   createdAt?: string;
 }
@@ -33,6 +36,7 @@ interface AuthState {
   error: string | null;
 
   login: (email: string, password: string) => Promise<{ success: boolean; redirectTo?: string; error?: string }>;
+  agencySsoLogin: () => Promise<{ success: boolean; redirectTo?: string; error?: string }>;
   register: (payload: {
     name: string;
     email: string;
@@ -195,5 +199,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   hasPermission: (permission: Permission) => {
     return hasPermission(get().access, permission);
+  },
+
+  agencySsoLogin: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const redirectUri = isBrowser ? `${window.location.origin}/login` : undefined;
+      const start = await authService.startSso({ provider: "mock", redirectUri });
+      const authorizationUrl = start.data.data.authorizationUrl as string;
+      const code = new URL(authorizationUrl).searchParams.get("code") ?? `mock-${Date.now()}`;
+      const { data } = await authService.completeSso({ provider: "mock", code, redirectUri });
+      const { user, access, accessToken, refreshToken, redirectTo } = data.data;
+      setTokens(accessToken, refreshToken);
+      const role = user.role as UserRole;
+      const permissions = access.permissions ?? [];
+      set({
+        user: { ...user, access, permissions, roles: access.roles, dashboards: access.dashboards, modules: access.modules },
+        role,
+        permissions,
+        access,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+      return { success: true, redirectTo: redirectTo ?? defaultRedirect(access) };
+    } catch (err) {
+      const message = extractMessage(err, "Agency SSO login failed.");
+      set({ isLoading: false, error: message, isAuthenticated: false });
+      return { success: false, error: message };
+    }
   },
 }));

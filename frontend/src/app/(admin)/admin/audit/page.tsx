@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { adminService } from "@/services";
+
 export default function AuditLogsPage() {
-  const logs = [
+  const fallbackLogs = [
     { id: "AUD-001", timestamp: "13/05/2026 • 18:45 IST", actor: "Director Rajesh Patil", action: "Changed role of Priya Sharma from Citizen to Volunteer", category: "ROLE_CHANGE", severity: "warning", ip: "103.21.XX.XX" },
     { id: "AUD-002", timestamp: "13/05/2026 • 18:30 IST", actor: "Commissioner Vikram Singh", action: "Emergency Override activated for Konkan Coastal District", category: "EMERGENCY", severity: "critical", ip: "14.139.XX.XX" },
     { id: "AUD-003", timestamp: "13/05/2026 • 17:15 IST", actor: "DM Sneha Kulkarni", action: "Deployed 4 NDRF teams to Kolhapur sector", category: "DEPLOYMENT", severity: "info", ip: "49.36.XX.XX" },
@@ -13,6 +16,21 @@ export default function AuditLogsPage() {
     { id: "AUD-009", timestamp: "12/05/2026 • 18:00 IST", actor: "Commissioner Vikram Singh", action: "Created new District Admin account: meera.j@disasterlink.gov.in", category: "USER_MGMT", severity: "info", ip: "14.139.XX.XX" },
     { id: "AUD-010", timestamp: "12/05/2026 • 09:45 IST", actor: "System", action: "Failed login attempt (3x) for admin@disasterlink.gov.in from 185.XX.XX.XX", category: "SECURITY", severity: "critical", ip: "185.XX.XX.XX" },
   ];
+  const [logs, setLogs] = useState(fallbackLogs);
+
+  useEffect(() => {
+    adminService.getAudit({ take: 100 }).then((response) => {
+      setLogs(response.data.data.map((log: { id: string; createdAt: string; user?: { name?: string }; action: string; module: string; severity: string; ip?: string }) => ({
+        id: log.id,
+        timestamp: new Date(log.createdAt).toLocaleString(),
+        actor: log.user?.name || "System",
+        action: log.action,
+        category: log.module.toUpperCase(),
+        severity: log.severity.toLowerCase(),
+        ip: log.ip || "-"
+      })));
+    }).catch(() => undefined);
+  }, []);
 
   const severityStyle: Record<string, string> = {
     critical: "bg-error text-on-error",

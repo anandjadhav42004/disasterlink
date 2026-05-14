@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { SocketBridge } from "@/components/providers/socket-bridge";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -39,6 +40,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
+            <SocketBridge />
             {children}
           </AuthProvider>
           <Toaster

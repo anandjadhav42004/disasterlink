@@ -18,8 +18,26 @@ export const authService = {
   refresh: async (data: { refreshToken: string }) =>
     api.post("/auth/refresh", data),
 
-  verifyOtp: async (data: { userId?: string; otp?: string }) =>
+  verifyOtp: async (data: { userId?: string; otp?: string; email?: string; code?: string }) =>
     api.post("/auth/verify-otp", data),
+
+  resendOtp: async (data: { email: string }) =>
+    api.post("/auth/resend-otp", data),
+
+  forgotPassword: async (data: { email: string }) =>
+    api.post("/auth/forgot-password", data),
+
+  verifyResetCode: async (data: { email: string; code: string }) =>
+    api.post("/auth/verify-reset-code", data),
+
+  resetPassword: async (data: { email: string; code: string; password: string }) =>
+    api.post("/auth/reset-password", data),
+
+  startSso: async (data: { provider: "mock" | "google" | "microsoft" | "government"; redirectUri?: string }) =>
+    api.post("/auth/sso/start", data),
+
+  completeSso: async (data: { provider: "mock" | "google" | "microsoft" | "government"; code: string; redirectUri?: string }) =>
+    api.post("/auth/sso/callback", data),
 
   logout: async (data?: { refreshToken?: string }) =>
     api.post("/auth/logout", data ?? {}),
@@ -83,6 +101,8 @@ export const shelterService = {
   update: async (id: string, data: Record<string, unknown>) => 
     api.patch(`/shelters/${id}`, data),
 
+  delete: async (id: string) => api.delete(`/shelters/${id}`),
+
   updateOccupancy: async (id: string, data: { occupied: number }) =>
     api.patch(`/shelters/${id}/occupancy`, data),
 
@@ -132,9 +152,18 @@ export const volunteerService = {
 // ADMIN SERVICE
 // ============================================
 export const adminService = {
-  getAnalytics: async () => api.get("/admin/analytics"),
+  getAnalytics: async (params?: { range?: string }) => api.get("/admin/analytics", { params }),
 
-  getIncidents: async () => api.get("/admin/incidents"),
+  getIncidents: async (params?: Record<string, unknown>) => api.get("/admin/incidents", { params }),
+
+  createIncident: async (data: Record<string, unknown>) =>
+    api.post("/admin/incidents", data),
+
+  updateIncident: async (id: string, data: Record<string, unknown>) =>
+    api.patch(`/admin/incidents/${id}`, data),
+
+  declareEmergency: async (data: Record<string, unknown>) =>
+    api.post("/admin/declare-emergency", data),
 
   getVolunteers: async () => api.get("/admin/volunteers"),
 
@@ -142,6 +171,30 @@ export const adminService = {
     api.post("/admin/broadcast", data),
 
   getHeatmap: async () => api.get("/admin/heatmap"),
+
+  getAudit: async (params?: { take?: number }) => api.get("/admin/audit", { params }),
+};
+
+// ============================================
+// USER MANAGEMENT SERVICE
+// ============================================
+export const userService = {
+  getAll: async (params?: Record<string, unknown>) => api.get("/users", { params }),
+  create: async (data: Record<string, unknown>) => api.post("/users", data),
+  update: async (id: string, data: Record<string, unknown>) => api.patch(`/users/${id}`, data),
+  bulkSuspend: async (ids: string[]) => api.patch("/users/bulk/suspend", { ids }),
+  delete: async (id: string) => api.delete(`/users/${id}`),
+  resetPassword: async (id: string) => api.post(`/users/${id}/reset-password`),
+  updateProfile: async (data: Record<string, unknown>) => api.patch("/users/profile", data),
+  deactivate: async () => api.post("/users/deactivate"),
+};
+
+export const requestService = {
+  create: async (data: Record<string, unknown>) => api.post("/requests", data),
+};
+
+export const contactService = {
+  submit: async (data: Record<string, unknown>) => api.post("/contact", data),
 };
 
 // ============================================

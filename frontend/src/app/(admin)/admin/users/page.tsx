@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { MANAGED_USERS, type ManagedUser } from "@/lib/auth";
 import { roleBadgeClass, roleLabel } from "@/lib/permissions";
 import type { UserRole } from "@/types";
+import { userService } from "@/services";
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<ManagedUser[]>(MANAGED_USERS);
@@ -13,8 +15,22 @@ export default function UserManagementPage() {
   const [sortBy, setSortBy] = useState<"name" | "role" | "lastActive">("name");
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
+  const [newUser, setNewUser] = useState({ name: "", email: "", phone: "", role: "citizen", district: "", state: "" });
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
+
+  useEffect(() => {
+    userService.getAll().then((response) => {
+      const loaded = response.data.data.map((user: ManagedUser & { status?: string }) => ({
+        ...user,
+        status: (user.status ?? "active") as ManagedUser["status"],
+        lastActive: user.lastActive ?? "Live API",
+      }));
+      setUsers(loaded);
+    }).catch(() => {
+      toast.error("Using cached user roster", { description: "The user API could not be reached." });
+    });
+  }, []);
 
   // Filter & sort
   const filtered = users
@@ -56,22 +72,56 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleSuspend = (id: string) => {
+  const handleSuspend = async (id: string) => {
+    const target = users.find((user) => user.id === id);
+    const nextStatus = target?.status === "suspended" ? "active" : "suspended";
     setUsers((prev) =>
       prev.map((u) =>
-        u.id === id ? { ...u, status: u.status === "suspended" ? "active" : "suspended" } : u
+        u.id === id ? { ...u, status: nextStatus } : u
       )
     );
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to remove this user? This action is irreversible.")) {
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+    try {
+      await userService.update(id, { status: nextStatus });
+      toast.success(nextStatus === "suspended" ? "User suspended" : "User activated");
+    } catch {
+      toast.error("User status update failed");
     }
   };
 
-  const handleRoleChange = (id: string, newRole: UserRole) => {
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to remove this user? This action is irreversible.")) {
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+      await userService.delete(id);
+      toast.success("User deactivated");
+    }
+  };
+
+  const handleRoleChange = async (id: string, newRole: UserRole) => {
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role: newRole } : u)));
+    try {
+      await userService.update(id, { role: newRole });
+      toast.success("Role updated");
+    } catch {
+      toast.error("Role update failed");
+    }
+  };
+
+  const handleBulkSuspend = async () => {
+    const ids = [...selectedUsers];
+    setUsers((prev) => prev.map((user) => ids.includes(user.id) ? { ...user, status: "suspended" } : user));
+    await userService.bulkSuspend(ids);
+    setSelectedUsers(new Set());
+    toast.success("Selected users suspended");
+  };
+
+  const handleCreateUser = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const response = await userService.create(newUser);
+    const created = response.data.data.user as ManagedUser;
+    setUsers((prev) => [{ ...created, status: "pending", lastActive: "Invitation sent" }, ...prev]);
+    toast.success("User invitation sent", { description: `Temporary password: ${response.data.data.invitation.temporaryPassword}` });
+    setShowAddModal(false);
+    setNewUser({ name: "", email: "", phone: "", role: "citizen", district: "", state: "" });
   };
 
   const statusBg: Record<string, string> = {
@@ -152,7 +202,7 @@ export default function UserManagementPage() {
         {selectedUsers.size > 0 && (
           <div className="mt-4 flex items-center gap-3 p-3 bg-primary-container/20 rounded-lg border border-primary/20">
             <span className="text-label-caps text-primary">{selectedUsers.size} SELECTED</span>
-            <button className="text-body-sm text-error hover:underline">Suspend Selected</button>
+            <button onClick={handleBulkSuspend} className="text-body-sm text-error hover:underline">Suspend Selected</button>
             <button className="text-body-sm text-on-surface-variant hover:underline">Export Selected</button>
           </div>
         )}
@@ -244,6 +294,10 @@ export default function UserManagementPage() {
                         </button>
                         <button
                           title="Reset Password"
+                          onClick={async () => {
+                            const response = await userService.resetPassword(user.id);
+                            toast.success("Reset email queued", { description: `Temporary password: ${response.data.data.temporaryPassword}` });
+                          }}
                           className="p-1.5 rounded hover:bg-surface-container-high transition-colors"
                         >
                           <span className="material-symbols-outlined text-[18px] text-on-surface-variant">lock_reset</span>
@@ -326,6 +380,28 @@ export default function UserManagementPage() {
           })}
         </div>
       </div>
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleCreateUser} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 w-full max-w-lg space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-title-sm">Add User</h2>
+              <button type="button" onClick={() => setShowAddModal(false)} className="material-symbols-outlined">close</button>
+            </div>
+            <input required value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} className="w-full p-3 rounded-lg border border-outline-variant bg-surface" placeholder="Name" />
+            <div className="grid grid-cols-2 gap-3">
+              <input required type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} className="p-3 rounded-lg border border-outline-variant bg-surface" placeholder="Email" />
+              <input required value={newUser.phone} onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })} className="p-3 rounded-lg border border-outline-variant bg-surface" placeholder="Phone" />
+              <select value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className="p-3 rounded-lg border border-outline-variant bg-surface">
+                <option value="citizen">Citizen</option><option value="volunteer">Volunteer</option><option value="admin">Administrator</option><option value="district_admin">District Admin</option><option value="super_admin">Super Admin</option>
+              </select>
+              <input value={newUser.district} onChange={(e) => setNewUser({ ...newUser, district: e.target.value })} className="p-3 rounded-lg border border-outline-variant bg-surface" placeholder="District" />
+              <input value={newUser.state} onChange={(e) => setNewUser({ ...newUser, state: e.target.value })} className="p-3 rounded-lg border border-outline-variant bg-surface" placeholder="State" />
+            </div>
+            <button className="w-full bg-primary text-on-primary py-3 rounded-lg text-label-caps">Send Invitation</button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

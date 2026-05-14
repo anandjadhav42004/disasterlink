@@ -38,6 +38,12 @@ model User {
   email            String       @unique
   password         String
   role             String       @default("citizen")
+  status           String       @default("active")
+  emailVerified    Boolean      @default(false)
+  deactivatedAt    DateTime?
+  emergencyContacts Json        @default("[]")
+  medicalInfo      Json         @default("{}")
+  preferences      Json         @default("{}")
   primaryRoleId    String?
   primaryRole      Role?        @relation("PrimaryRole", fields: [primaryRoleId], references: [id])
   fcmToken         String?
@@ -54,12 +60,33 @@ model User {
   roles            UserRole[]
   auditLogs        AuditLog[]
   activeSessions   ActiveSession[]
+  passwordResetCodes PasswordResetCode[]
+  contactInquiries ContactInquiry[]
 
   @@index([role])
+  @@index([status])
   @@index([primaryRoleId])
   @@index([district])
   @@index([state])
   @@index([latitude, longitude])
+}
+
+model PasswordResetCode {
+  id        String   @id @default(uuid())
+  email     String
+  codeHash  String
+  tokenHash String?
+  purpose   String   @default("password_reset")
+  consumed  Boolean  @default(false)
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([expiresAt])
+  @@index([purpose])
 }
 
 model Role {
@@ -208,10 +235,17 @@ model Shelter {
   occupied  Int      @default(0)
   address   String?
   contact   String?
+  district  String?
+  state     String?
+  resources Json     @default("{}")
+  emergencyCapacity Boolean @default(false)
+  status    String   @default("open")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([latitude, longitude])
+  @@index([district])
+  @@index([status])
 }
 
 model Alert {
@@ -222,7 +256,29 @@ model Alert {
   latitude  Float?
   longitude Float?
   radius    Float?
+  district  String?
+  state     String?
+  channels  Json     @default("[]")
+  status    String   @default("active")
+  metadata  Json     @default("{}")
   createdAt DateTime @default(now())
+}
+
+model ContactInquiry {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  ticketId  String   @unique
+  status    String   @default("open")
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([status])
 }
 
 model RefreshToken {

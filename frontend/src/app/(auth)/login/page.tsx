@@ -11,6 +11,7 @@ import { toast } from "sonner";
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
+  const agencySsoLogin = useAuthStore((state) => state.agencySsoLogin);
   const clearError = useAuthStore((state) => state.clearError);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -84,6 +85,18 @@ export default function LoginPage() {
   const handleChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+  };
+
+  const handleSso = async () => {
+    setIsLoading(true);
+    const result = await agencySsoLogin();
+    setIsLoading(false);
+    if (result.success) {
+      toast.success("Agency SSO authenticated");
+      router.push(result.redirectTo || "/admin");
+    } else {
+      toast.error(result.error || "Agency SSO failed");
+    }
   };
 
   const stats = [
@@ -458,14 +471,14 @@ export default function LoginPage() {
                 >
                   ACCESS TOKEN / PASSWORD
                 </label>
-                <a
-                  href="#"
+                <Link
+                  href="/forgot-password"
                   style={{ fontSize: "12px", color: "#0B1F33", fontWeight: 500, textDecoration: "none" }}
                   onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
                   onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                 >
                   Forgot access?
-                </a>
+                </Link>
               </div>
               <div style={{ position: "relative" }}>
                 <span
@@ -692,6 +705,8 @@ export default function LoginPage() {
           {/* SSO button */}
           <button
             type="button"
+            onClick={handleSso}
+            disabled={isLoading}
             suppressHydrationWarning
             style={{
               width: "100%",

@@ -72,6 +72,9 @@ export default function LiveMapPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [showLayers, setShowLayers] = useState(false);
+  const [layers, setLayers] = useState({ shelters: true, volunteers: true, incidents: true, heatmap: false, routes: false });
+  const [myLocation, setMyLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const loadMap = useCallback(async () => {
     try {
@@ -101,6 +104,16 @@ export default function LiveMapPage() {
     () => data.incidents.filter((incident) => incident.status !== "RESOLVED" && incident.status !== "CANCELLED"),
     [data.incidents]
   );
+
+  const locateMe = () => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setMyLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+      },
+      () => setError("Geolocation permission was denied or unavailable."),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   return (
     <main className="flex-grow flex flex-col h-[calc(100vh-64px)]">
@@ -145,7 +158,11 @@ export default function LiveMapPage() {
             </div>
           )}
 
-          {data.shelters.map((shelter) => (
+          {layers.heatmap && activeIncidents.map((incident) => (
+            <div key={`heat-${incident.id}`} className="absolute -translate-x-1/2 -translate-y-1/2 h-24 w-24 rounded-full bg-error/20 blur-xl" style={markerPosition(incident.latitude, incident.longitude)} />
+          ))}
+
+          {layers.shelters && data.shelters.map((shelter) => (
             <div key={shelter.id} className="absolute z-10 -translate-x-1/2 -translate-y-1/2 group" style={markerPosition(shelter.latitude, shelter.longitude)}>
               <div className="h-6 w-6 rounded-full bg-primary text-on-primary border-2 border-white shadow-lg grid place-items-center">
                 <Home className="h-3.5 w-3.5" />
@@ -157,7 +174,7 @@ export default function LiveMapPage() {
             </div>
           ))}
 
-          {data.volunteers.map((volunteer) => {
+          {layers.volunteers && data.volunteers.map((volunteer) => {
             const latitude = volunteer.user.latitude;
             const longitude = volunteer.user.longitude;
             if (latitude == null || longitude == null) return null;
@@ -174,7 +191,7 @@ export default function LiveMapPage() {
             );
           })}
 
-          {activeIncidents.map((incident) => (
+          {layers.incidents && activeIncidents.map((incident) => (
             <div key={incident.id} className="absolute z-20 -translate-x-1/2 -translate-y-1/2 group" style={markerPosition(incident.latitude, incident.longitude)}>
               <div className="absolute inset-0 h-9 w-9 -translate-x-1.5 -translate-y-1.5 rounded-full bg-error/20 animate-ping" />
               <div className={cn("relative h-6 w-6 rounded-full border-2 border-white shadow-lg grid place-items-center", severityTone(incident.severity))}>
@@ -188,13 +205,29 @@ export default function LiveMapPage() {
             </div>
           ))}
 
+          {myLocation && (
+            <div className="absolute z-30 -translate-x-1/2 -translate-y-1/2" style={markerPosition(myLocation.latitude, myLocation.longitude)}>
+              <div className="h-5 w-5 rounded-full bg-blue-700 border-2 border-white shadow" title="My location" />
+            </div>
+          )}
+
           <div className="absolute top-4 right-4 flex flex-col gap-2">
-            <button className="w-10 h-10 rounded-md bg-surface shadow border border-outline-variant grid place-items-center text-primary" aria-label="Layers">
+            <button onClick={() => setShowLayers((value) => !value)} className="w-10 h-10 rounded-md bg-surface shadow border border-outline-variant grid place-items-center text-primary" aria-label="Layers">
               <Layers className="h-4 w-4" />
             </button>
-            <button className="w-10 h-10 rounded-md bg-surface shadow border border-outline-variant grid place-items-center text-primary" aria-label="My location">
+            <button onClick={locateMe} className="w-10 h-10 rounded-md bg-surface shadow border border-outline-variant grid place-items-center text-primary" aria-label="My location">
               <LocateFixed className="h-4 w-4" />
             </button>
+            {showLayers && (
+              <div className="absolute right-12 top-0 bg-surface border border-outline-variant rounded-md shadow p-3 w-56 space-y-2">
+                {Object.entries(layers).map(([key, enabled]) => (
+                  <label key={key} className="flex items-center justify-between text-body-sm">
+                    <span className="capitalize">{key}</span>
+                    <input type="checkbox" checked={enabled} onChange={() => setLayers((current) => ({ ...current, [key]: !current[key as keyof typeof layers] }))} />
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="absolute bottom-4 left-4 bg-surface/90 backdrop-blur p-4 rounded-md border border-outline-variant shadow-lg">
