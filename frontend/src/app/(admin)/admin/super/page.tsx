@@ -2,8 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Activity, AlertTriangle, Database, KeyRound, LockKeyhole, Radio, Settings, Shield, Users } from "lucide-react";
+import Link from "next/link";
+import { DistrictWeatherPanel } from "@/components/weather/district-weather-panel";
+import { OperationalWeatherBar } from "@/components/weather/operational-weather-bar";
+import { RainfallChart } from "@/components/weather/rainfall-chart";
+import { WeatherRadar } from "@/components/weather/weather-radar";
+import { useRotatingWeather } from "@/hooks/useRotatingWeather";
 import { adminService, roleService } from "@/services";
 import { useAuthStore } from "@/store/auth-store";
+import { useWeatherStore } from "@/store/weather-store";
 import { cn } from "@/lib/utils";
 
 interface RoleRow {
@@ -63,6 +70,18 @@ const shellCards = [
 
 export default function SuperAdminPage() {
   const { access } = useAuthStore();
+  const {
+    currentWeather,
+    districtWeather,
+    forecast,
+    alerts,
+    mapWeatherOverlay,
+    fetchWeatherWatchlist,
+    fetchForecast,
+    fetchAlerts,
+    fetchMapWeatherOverlay
+  } = useWeatherStore();
+  const rotatingWeather = useRotatingWeather(districtWeather, currentWeather);
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [permissions, setPermissions] = useState<PermissionRow[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditRow[]>([]);
@@ -97,7 +116,11 @@ export default function SuperAdminPage() {
       setIsLoading(false);
     }
     load();
-  }, []);
+    void fetchWeatherWatchlist();
+    void fetchForecast("Mumbai");
+    void fetchAlerts("Mumbai");
+    void fetchMapWeatherOverlay();
+  }, [fetchAlerts, fetchForecast, fetchMapWeatherOverlay, fetchWeatherWatchlist]);
 
   const permissionModules = useMemo(() => {
     return Array.from(new Set(permissions.map((permission) => permission.module))).sort();
@@ -143,6 +166,26 @@ export default function SuperAdminPage() {
         <Metric label="Shelters" value={analytics.shelters ?? 0} icon={Shield} />
         <Metric label="Critical" value={analytics.critical ?? 0} icon={Radio} />
         <Metric label="Active Sessions" value={sessions.length} icon={Activity} />
+      </section>
+
+      <OperationalWeatherBar weather={rotatingWeather} alerts={alerts} />
+
+      <section className="mb-6 grid gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-5">
+          <DistrictWeatherPanel weatherByDistrict={districtWeather} />
+        </div>
+        <div className="xl:col-span-4">
+          <WeatherRadar overlay={mapWeatherOverlay} />
+        </div>
+        <div className="xl:col-span-3 space-y-4">
+          <RainfallChart forecast={forecast} currentWeather={rotatingWeather} />
+          <Link
+            href="/admin/map"
+            className="flex items-center justify-center rounded-md border border-primary/30 bg-primary-container/10 px-4 py-3 text-label-caps text-primary hover:bg-primary-container/20"
+          >
+            Open National Map
+          </Link>
+        </div>
       </section>
 
       <section className="mb-6 grid gap-4 md:grid-cols-4">

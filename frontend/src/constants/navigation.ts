@@ -13,7 +13,6 @@ export const dashboardNav: NavItem[] = [
   { title: "SOS Emergency", href: "/dashboard/sos", icon: "Siren", requiredPermissions: ["sos.create"] },
   { title: "Emergency Feed", href: "/dashboard/feed", icon: "Radio", requiredPermissions: ["alerts.view"] },
   { title: "My Requests", href: "/dashboard/requests", icon: "FileText", requiredPermissions: ["sos.view_own"] },
-  { title: "Live Map", href: "/dashboard/map", icon: "Map", requiredPermissions: ["map.view", "map.full_access"] },
   { title: "Profile", href: "/dashboard/profile", icon: "UserCircle" },
 ];
 
@@ -27,6 +26,7 @@ export const volunteerNav: NavItem[] = [
 export const adminNav: NavItem[] = [
   { title: "Super Command", href: "/admin/super", icon: "Shield", requiredPermissions: ["roles.manage", "config.manage"] },
   { title: "Operations Center", href: "/admin", icon: "Activity", module: "admin" },
+  { title: "National Map", href: "/admin/map", icon: "Map", requiredPermissions: ["map.view", "map.full_access"] },
   { title: "Incidents", href: "/admin/incidents", icon: "AlertTriangle", requiredPermissions: ["incidents.view", "incidents.manage"] },
   { title: "Shelters", href: "/admin/shelters", icon: "Home", requiredPermissions: ["shelters.manage", "shelters.create"] },
   { title: "Volunteers", href: "/admin/volunteers", icon: "Users", requiredPermissions: ["volunteers.view", "volunteers.manage"] },

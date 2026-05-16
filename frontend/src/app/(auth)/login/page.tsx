@@ -4,6 +4,22 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Building2,
+  CheckCircle2,
+  CircleAlert,
+  Eye,
+  EyeOff,
+  KeyRound,
+  LockKeyhole,
+  LogIn,
+  Shield,
+  ShieldCheck,
+  ShieldX,
+  Smartphone,
+  UserCircle
+} from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { roleLabel } from "@/lib/permissions";
 import { toast } from "sonner";
@@ -126,13 +142,7 @@ export default function LoginPage() {
           borderBottom: "1px solid rgba(255,255,255,0.08)",
         }}
       >
-        <span
-          className="material-symbols-outlined"
-          style={{ fontSize: "13px", color: "#4CAF50" }}
-          aria-hidden="true"
-        >
-          verified_user
-        </span>
+        <ShieldCheck size={13} color="#4CAF50" aria-hidden="true" />
         <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em" }}>
           SECURE CONNECTION · TLS 1.3 · FIPS 140-2 COMPLIANT · AUTHORISED ACCESS ONLY
         </span>
@@ -328,6 +338,30 @@ export default function LoginPage() {
 
           {/* Header */}
           <header style={{ marginBottom: "36px" }}>
+            <Link
+              href="/"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                color: "#5A6B7A",
+                fontSize: "12px",
+                fontWeight: 600,
+                letterSpacing: "0.04em",
+                textDecoration: "none",
+                marginBottom: "18px",
+                textTransform: "uppercase",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#0B1F33";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#5A6B7A";
+              }}
+            >
+              <ArrowLeft size={14} aria-hidden="true" />
+              Back to main page
+            </Link>
             <h2
               style={{
                 fontSize: "22px",
@@ -358,13 +392,7 @@ export default function LoginPage() {
                 marginBottom: "24px",
               }}
             >
-              <span
-                className="material-symbols-outlined"
-                style={{ color: "#DC2626", fontSize: "22px" }}
-                aria-hidden="true"
-              >
-                gpp_bad
-              </span>
+              <ShieldX size={22} color="#DC2626" aria-hidden="true" />
               <div>
                 <div style={{ fontSize: "14px", fontWeight: 600, color: "#991B1B" }}>Access Denied</div>
                 <div style={{ fontSize: "12px", color: "#B91C1C" }}>{loginError}</div>
@@ -386,13 +414,7 @@ export default function LoginPage() {
                 marginBottom: "24px",
               }}
             >
-              <span
-                className="material-symbols-outlined"
-                style={{ color: "#2E7D32", fontSize: "22px" }}
-                aria-hidden="true"
-              >
-                check_circle
-              </span>
+              <CheckCircle2 size={22} color="#2E7D32" aria-hidden="true" />
               <div>
                 <div style={{ fontSize: "14px", fontWeight: 600, color: "#166534" }}>Authentication Successful</div>
                 <div style={{ fontSize: "12px", color: "#15803d" }}>Redirecting to {resolvedRole || "dashboard"}…</div>
@@ -410,22 +432,19 @@ export default function LoginPage() {
                 AGENCY EMAIL OR ID
               </label>
               <div style={{ position: "relative" }}>
-                <span
-                  className="material-symbols-outlined"
+                <UserCircle
+                  size={18}
                   style={{
                     position: "absolute",
                     left: "14px",
                     top: "50%",
                     transform: "translateY(-50%)",
-                    fontSize: "18px",
                     color: focusedField === "identity" ? "#0B1F33" : "#9CA8B3",
                     transition: "color 0.15s",
                     pointerEvents: "none",
                   }}
                   aria-hidden="true"
-                >
-                  account_circle
-                </span>
+                />
                 <input
                   id="identity"
                   type="text"
@@ -456,7 +475,7 @@ export default function LoginPage() {
               </div>
               {errors.identity && (
                 <p style={{ fontSize: "12px", color: "#E53935", marginTop: "5px", display: "flex", alignItems: "center", gap: "4px" }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: "13px" }} aria-hidden="true">error</span>
+                  <CircleAlert size={13} aria-hidden="true" />
                   {errors.identity}
                 </p>
               )}
@@ -481,22 +500,19 @@ export default function LoginPage() {
                 </Link>
               </div>
               <div style={{ position: "relative" }}>
-                <span
-                  className="material-symbols-outlined"
+                <KeyRound
+                  size={18}
                   style={{
                     position: "absolute",
                     left: "14px",
                     top: "50%",
                     transform: "translateY(-50%)",
-                    fontSize: "18px",
                     color: focusedField === "password" ? "#0B1F33" : "#9CA8B3",
                     transition: "color 0.15s",
                     pointerEvents: "none",
                   }}
                   aria-hidden="true"
-                >
-                  key
-                </span>
+                />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -543,14 +559,12 @@ export default function LoginPage() {
                   }}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: "18px" }} aria-hidden="true">
-                    {showPassword ? "visibility_off" : "visibility"}
-                  </span>
+                  {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
                 </button>
               </div>
               {errors.password && (
                 <p style={{ fontSize: "12px", color: "#E53935", marginTop: "5px", display: "flex", alignItems: "center", gap: "4px" }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: "13px" }} aria-hidden="true">error</span>
+                  <CircleAlert size={13} aria-hidden="true" />
                   {errors.password}
                 </p>
               )}
@@ -565,22 +579,19 @@ export default function LoginPage() {
                 MFA — REGISTERED DEVICE <span style={{ color: "#9CA8B3", fontWeight: 400 }}>(OPTIONAL)</span>
               </label>
               <div style={{ position: "relative" }}>
-                <span
-                  className="material-symbols-outlined"
+                <Smartphone
+                  size={18}
                   style={{
                     position: "absolute",
                     left: "14px",
                     top: "50%",
                     transform: "translateY(-50%)",
-                    fontSize: "18px",
                     color: focusedField === "mfa" ? "#0B1F33" : "#9CA8B3",
                     transition: "color 0.15s",
                     pointerEvents: "none",
                   }}
                   aria-hidden="true"
-                >
-                  smartphone
-                </span>
+                />
                 <input
                   id="mfa"
                   type="tel"
@@ -683,13 +694,13 @@ export default function LoginPage() {
                 </>
               ) : submitStatus === "success" ? (
                 <>
-                  <span className="material-symbols-outlined" style={{ fontSize: "18px" }} aria-hidden="true">check_circle</span>
+                  <CheckCircle2 size={18} aria-hidden="true" />
                   Access Granted
                 </>
               ) : (
                 <>
                   Establish Secure Connection
-                  <span className="material-symbols-outlined" style={{ fontSize: "18px" }} aria-hidden="true">login</span>
+                  <LogIn size={18} aria-hidden="true" />
                 </>
               )}
             </button>
@@ -733,9 +744,7 @@ export default function LoginPage() {
               e.currentTarget.style.background = "white";
             }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: "18px", color: "#5A6B7A" }} aria-hidden="true">
-              corporate_fare
-            </span>
+            <Building2 size={18} color="#5A6B7A" aria-hidden="true" />
             Sign in with Agency SSO
           </button>
 
@@ -764,20 +773,14 @@ export default function LoginPage() {
             {/* Security badges */}
             <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginBottom: "16px" }}>
               {[
-                { icon: "verified_user", label: "FIPS 140-2" },
-                { icon: "vpn_lock", label: "GovCloud" },
-                { icon: "shield", label: "AES-256" },
-              ].map((badge) => (
-                <div key={badge.label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: "14px", color: "#9CA8B3" }}
-                    aria-hidden="true"
-                  >
-                    {badge.icon}
-                  </span>
+                { Icon: ShieldCheck, label: "FIPS 140-2" },
+                { Icon: LockKeyhole, label: "GovCloud" },
+                { Icon: Shield, label: "AES-256" },
+              ].map(({ Icon, label }) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                  <Icon size={14} color="#9CA8B3" aria-hidden="true" />
                   <span style={{ fontSize: "11px", color: "#9CA8B3", fontWeight: 600, letterSpacing: "0.06em" }}>
-                    {badge.label}
+                    {label}
                   </span>
                 </div>
               ))}

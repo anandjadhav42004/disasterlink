@@ -222,3 +222,29 @@ export const mapService = {
     api.get("/map/shelters", { params }),
   getHeatmapData: async () => api.get("/map/heatmap"),
 };
+
+// ============================================
+// WEATHER INTELLIGENCE SERVICE
+// ============================================
+export const weatherService = {
+  current: async (city = "Mumbai") => api.get("/weather/current", { params: { city } }),
+  forecast: async (city = "Mumbai") => api.get("/weather/forecast", { params: { city } }),
+  alerts: async (city = "Mumbai") => api.get("/weather/alerts", { params: { city } }),
+  district: async (district: string, coordinates?: { lat: number; lng: number; displayName?: string }) =>
+    api.get(`/weather/district/${encodeURIComponent(district)}`, { params: coordinates }),
+  mapOverlay: async () => api.get("/weather/map-overlay"),
+};
+
+// ============================================
+// RADAR INTELLIGENCE SERVICE
+// ============================================
+export const radarService = {
+  tiles: async () => api.get("/radar/tiles"),
+  latest: async () => api.get("/radar/latest"),
+  forecast: async () => api.get("/radar/forecast"),
+  overlay: async () => api.get("/radar/overlay"),
+  severity: async (district = "Mumbai") => api.get("/radar/severity", { params: { district } }),
+  floodRisk: async (district?: string) => api.get("/radar/flood-risk", { params: district ? { district } : undefined }),
+  stormTracking: async () => api.get("/radar/storm-tracking"),
+  district: async (district: string) => api.get(`/radar/district/${encodeURIComponent(district)}`),
+};

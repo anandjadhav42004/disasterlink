@@ -16,6 +16,7 @@ export const PERMISSIONS = {
   VOLUNTEERS_ASSIGN: "volunteers.assign",
   ANALYTICS_VIEW: "analytics.view",
   SHELTERS_MANAGE: "shelters.manage",
+  MAP_VIEW: "map.view",
   MAP_FULL_ACCESS: "map.full_access",
   AUDIT_VIEW: "audit.view",
   CONFIG_MANAGE: "config.manage",
@@ -31,13 +32,15 @@ const routePermissions: Array<{ prefix: string; permissions: string[]; modules?:
   { prefix: "/admin/users", permissions: ["users.view", "users.edit"] },
   { prefix: "/admin/audit", permissions: ["audit.view", "roles.manage"] },
   { prefix: "/admin/analytics", permissions: ["analytics.view", "analytics.national"] },
+  { prefix: "/admin/map", permissions: ["users.view", "map.full_access", "emergency.override"], modules: ["admin"] },
   { prefix: "/admin/incidents", permissions: ["incidents.view", "incidents.manage"] },
   { prefix: "/admin/volunteers", permissions: ["volunteers.view", "volunteers.manage"] },
   { prefix: "/admin/notifications", permissions: ["alerts.broadcast", "notifications.manage"] },
   { prefix: "/admin/shelters", permissions: ["shelters.manage", "shelters.create"] },
   { prefix: "/admin", permissions: ["analytics.view", "incidents.view", "users.view"], modules: ["admin"] },
   { prefix: "/volunteer", permissions: ["volunteers.respond", "volunteers.manage"], modules: ["volunteer"] },
-  { prefix: "/dashboard", permissions: ["sos.create", "sos.view_own", "map.view"], modules: ["dashboard"] }
+  { prefix: "/dashboard/map", permissions: ["map.full_access"], modules: ["admin", "map"] },
+  { prefix: "/dashboard", permissions: ["sos.create", "sos.view_own"], modules: ["dashboard"] }
 ];
 
 export function hasPermission(access: UserAccess | null | undefined, required: string): boolean {

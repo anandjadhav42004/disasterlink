@@ -8,11 +8,11 @@ import { useAuthStore } from "@/store/auth-store";
  * stored access token — so the user stays logged in on refresh.
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const fetchMe = useAuthStore((s) => s.fetchMe);
+  const hydrate = useAuthStore((s) => s.hydrate);
 
   useEffect(() => {
-    fetchMe();
-  }, [fetchMe]);
+    hydrate();
+  }, [hydrate]);
 
   return <>{children}</>;
 }

@@ -43,7 +43,7 @@ interface AuthState {
     phone: string;
     password: string;
     role?: string;
-  }) => Promise<{ redirectTo?: string }>;
+  }) => Promise<{ success: boolean; redirectTo?: string; error?: string }>;
   logout: () => Promise<void>;
   fetchMe: () => Promise<void>;
   hydrate: () => void;
@@ -146,11 +146,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: true,
         isLoading: false,
       });
-      return { redirectTo: redirectTo ?? defaultRedirect(access) };
+      return { success: true, redirectTo: redirectTo ?? defaultRedirect(access) };
     } catch (err) {
       const message = extractMessage(err, "Registration failed. Please try again.");
       set({ isLoading: false, error: message, isAuthenticated: false });
-      throw err;
+      return { success: false, error: message };
     }
   },
 
@@ -169,7 +169,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // ── Hydrate from token on app load ───────────────────
   fetchMe: async () => {
-    if (!getStoredToken()) return;
+    if (!getStoredToken()) {
+      set({ user: null, role: null, permissions: [], access: null, isAuthenticated: false, isLoading: false, isHydrated: true });
+      return;
+    }
     set({ isLoading: true });
     try {
       const { data } = await authService.me();
@@ -182,19 +185,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         access,
         isAuthenticated: true,
         isLoading: false,
+        isHydrated: true,
       });
     } catch {
       clearTokens();
-      set({ user: null, role: null, permissions: [], access: null, isAuthenticated: false, isLoading: false });
+      set({ user: null, role: null, permissions: [], access: null, isAuthenticated: false, isLoading: false, isHydrated: true });
     }
   },
 
   hydrate: () => {
-    // Basic hydration check - fetchMe handles the actual data restoration
-    if (getStoredToken()) {
-      get().fetchMe();
+    const state = get();
+    if (state.isLoading) return;
+    if (state.isHydrated && state.user && state.access) return;
+
+    if (!getStoredToken()) {
+      set({ user: null, role: null, permissions: [], access: null, isAuthenticated: false, isHydrated: true });
+      return;
     }
-    set({ isHydrated: true });
+
+    void get().fetchMe();
   },
 
   hasPermission: (permission: Permission) => {

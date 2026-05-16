@@ -3,10 +3,28 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { DistrictWeatherPanel } from "@/components/weather/district-weather-panel";
+import { OperationalWeatherBar } from "@/components/weather/operational-weather-bar";
+import { RainfallChart } from "@/components/weather/rainfall-chart";
+import { WeatherRadar } from "@/components/weather/weather-radar";
+import { useRotatingWeather } from "@/hooks/useRotatingWeather";
 import { useOperationsStore } from "@/store/operations-store";
+import { useWeatherStore } from "@/store/weather-store";
 
 export default function AdminDashboard() {
   const { incidents, shelters, activeLayers, fetchIncidents, fetchShelters, declareEmergency, toggleLayer } = useOperationsStore();
+  const {
+    currentWeather,
+    districtWeather,
+    forecast,
+    alerts,
+    mapWeatherOverlay,
+    fetchWeatherWatchlist,
+    fetchForecast,
+    fetchAlerts,
+    fetchMapWeatherOverlay
+  } = useWeatherStore();
+  const rotatingWeather = useRotatingWeather(districtWeather, currentWeather);
   const [showEmergency, setShowEmergency] = useState(false);
   const [emergency, setEmergency] = useState({ title: "", message: "", severity: "CRITICAL", district: "", state: "", deploymentLevel: "district", latitude: "19.076", longitude: "72.8777" });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,7 +32,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchIncidents();
     fetchShelters();
-  }, [fetchIncidents, fetchShelters]);
+    void fetchWeatherWatchlist();
+    void fetchForecast("Mumbai");
+    void fetchAlerts("Mumbai");
+    void fetchMapWeatherOverlay();
+  }, [fetchAlerts, fetchForecast, fetchIncidents, fetchMapWeatherOverlay, fetchShelters, fetchWeatherWatchlist]);
 
   const activeIncidents = incidents.filter((incident) => !["RESOLVED", "CANCELLED"].includes(incident.status));
   const criticalCount = activeIncidents.filter((incident) => incident.severity === "CRITICAL").length;
@@ -40,6 +62,8 @@ export default function AdminDashboard() {
 
   return (
     <main className="flex-grow max-w-[1440px] mx-auto w-full px-4 md:px-8 py-6">
+      <OperationalWeatherBar weather={rotatingWeather} alerts={alerts} />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="border-l-4 border-primary pl-4 py-1">
@@ -66,6 +90,18 @@ export default function AdminDashboard() {
           </div>
         ))}
       </div>
+
+      <section className="mb-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-5">
+          <DistrictWeatherPanel weatherByDistrict={districtWeather} />
+        </div>
+        <div className="lg:col-span-4">
+          <WeatherRadar overlay={mapWeatherOverlay} />
+        </div>
+        <div className="lg:col-span-3">
+          <RainfallChart forecast={forecast} currentWeather={rotatingWeather} />
+        </div>
+      </section>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -103,10 +139,17 @@ export default function AdminDashboard() {
               <div className="flex gap-2">
                 <button onClick={() => toggleLayer("heatmap")} className={`text-label-caps px-2 py-1 rounded ${activeLayers.heatmap ? "text-primary bg-primary-container/10 border border-primary/20" : "text-on-surface-variant bg-surface-container-high"}`}>HEAT MAP</button>
                 <button onClick={() => toggleLayer("incidents")} className={`text-label-caps px-2 py-1 rounded ${activeLayers.incidents ? "text-primary bg-primary-container/10 border border-primary/20" : "text-on-surface-variant bg-surface-container-high"}`}>INCIDENTS</button>
+                <button onClick={fetchMapWeatherOverlay} className="text-label-caps px-2 py-1 rounded text-primary bg-primary-container/10 border border-primary/20">WEATHER</button>
               </div>
             </div>
             <div className="h-64 relative bg-surface-dim">
               <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(#6750a4 0.5px, transparent 0.5px)", backgroundSize: "32px 32px", opacity: 0.08 }} />
+              {mapWeatherOverlay?.layers.severityMarkers.slice(0, 8).map((marker, index) => (
+                <div key={`${marker.type}-${marker.id}`} className="absolute" style={{ top: `${18 + (index * 11) % 58}%`, left: `${18 + (index * 19) % 66}%` }}>
+                  <div className={`w-10 h-10 rounded-full blur-md ${marker.severity === "CRITICAL" ? "bg-red-500/30" : marker.severity === "SEVERE" ? "bg-orange-500/30" : "bg-yellow-400/25"}`} />
+                  <div className="absolute top-3 left-3 w-4 h-4 rounded-full bg-cyan-300" title={marker.label} />
+                </div>
+              ))}
               {activeLayers.heatmap && <div className="absolute top-[25%] left-[35%] w-28 h-28 bg-error/20 rounded-full blur-xl" />}
               {activeLayers.incidents && activeIncidents.slice(0, 8).map((incident, index) => (
                 <div key={incident.id} className="absolute" style={{ top: `${20 + (index * 13) % 55}%`, left: `${25 + (index * 17) % 60}%` }}>
@@ -124,6 +167,7 @@ export default function AdminDashboard() {
           <div className="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl">
             <h3 className="text-label-caps text-on-surface-variant mb-3">COMMAND ACTIONS</h3>
             <div className="space-y-2">
+              <Link href="/admin/map" className="w-full py-3 bg-secondary text-on-secondary rounded-lg text-label-caps hover:opacity-90 transition-opacity flex items-center justify-center gap-2"><span className="material-symbols-outlined text-sm">map</span>Open National Map</Link>
               <Link href="/admin/incidents" className="w-full py-3 bg-primary text-on-primary rounded-lg text-label-caps hover:opacity-90 transition-opacity flex items-center justify-center gap-2"><span className="material-symbols-outlined text-sm">add_circle</span>Create Incident</Link>
               <Link href="/admin/volunteers" className="w-full py-3 border border-primary text-primary rounded-lg text-label-caps hover:bg-primary-container/10 transition-colors flex items-center justify-center gap-2"><span className="material-symbols-outlined text-sm">group_add</span>Deploy Teams</Link>
               <Link href="/admin/notifications" className="w-full py-3 border border-outline text-on-surface-variant rounded-lg text-label-caps hover:bg-surface-container-high transition-colors flex items-center justify-center gap-2"><span className="material-symbols-outlined text-sm">campaign</span>Broadcast Alert</Link>

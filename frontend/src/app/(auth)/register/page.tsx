@@ -59,6 +59,18 @@ export default function RegisterPage() {
         password: formData.password,
         role,
       });
+      if (!result.success) {
+        const message = result.error ?? useAuthStore.getState().error ?? authError ?? "Registration failed. Please try again.";
+        const lowerMessage = message.toLowerCase();
+        if (lowerMessage.includes("email")) {
+          setErrors((prev) => ({ ...prev, email: message }));
+        } else if (lowerMessage.includes("phone")) {
+          setErrors((prev) => ({ ...prev, phone: message }));
+        }
+        setIsLoading(false);
+        toast.error(message);
+        return;
+      }
       toast.success("Account created! Redirecting…");
       setTimeout(() => router.push(result.redirectTo ?? "/dashboard"), 1200);
     } catch {

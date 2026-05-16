@@ -9,7 +9,7 @@ export function FloatingSOS() {
   const pathname = usePathname();
 
   // Show on dashboard routes only, not on the SOS page itself
-  const showRoutes = ["/dashboard", "/dashboard/feed", "/dashboard/requests", "/dashboard/map", "/dashboard/profile"];
+  const showRoutes = ["/dashboard", "/dashboard/feed", "/dashboard/requests", "/dashboard/profile"];
   const isVisible = showRoutes.some((r) => pathname === r);
 
   return (

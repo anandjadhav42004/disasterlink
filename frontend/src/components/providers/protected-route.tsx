@@ -20,7 +20,7 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children, showLoader = true }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, isHydrated, access, hydrate } = useAuthStore();
+  const { isAuthenticated, isHydrated, isLoading, access, hydrate } = useAuthStore();
 
   // Hydrate session from localStorage on mount
   useEffect(() => {
@@ -28,22 +28,24 @@ export default function ProtectedRoute({ children, showLoader = true }: Protecte
   }, [hydrate]);
 
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!isHydrated || isLoading) return;
 
     if (!isAuthenticated) {
       router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
 
+    if (!access) return;
+
     if (!canAccessRoute(access, pathname)) {
       // User is authenticated but not authorized for this route
       const correctPath = defaultRedirect(access);
       router.replace(correctPath);
     }
-  }, [access, isAuthenticated, isHydrated, pathname, router]);
+  }, [access, isAuthenticated, isHydrated, isLoading, pathname, router]);
 
   // Show loading while hydrating
-  if (!isHydrated && showLoader) {
+  if ((!isHydrated || isLoading || (isAuthenticated && !access)) && showLoader) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -60,6 +62,7 @@ export default function ProtectedRoute({ children, showLoader = true }: Protecte
 
   // If not authenticated or unauthorized, don't render (redirect will happen)
   if (!isAuthenticated) return null;
+  if (!access) return null;
   if (!canAccessRoute(access, pathname)) return null;
 
   return <>{children}</>;

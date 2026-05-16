@@ -3,6 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { alertService, shelterService } from "@/services";
+import { OperationalWeatherBar } from "@/components/weather/operational-weather-bar";
+import { RainfallChart } from "@/components/weather/rainfall-chart";
+import { WeatherAlert } from "@/components/weather/weather-alert";
+import { WeatherCard } from "@/components/weather/weather-card";
+import { WeatherWidget } from "@/components/weather/weather-widget";
+import { useRotatingWeather } from "@/hooks/useRotatingWeather";
+import { useWeatherStore } from "@/store/weather-store";
 
 interface BackendAlert {
   id: string;
@@ -28,6 +35,16 @@ export default function CitizenDashboard() {
   const [shelters, setShelters] = useState<BackendShelter[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
   const [loadingShelters, setLoadingShelters] = useState(true);
+  const {
+    currentWeather,
+    districtWeather,
+    forecast,
+    alerts: weatherAlerts,
+    fetchWeatherWatchlist,
+    fetchForecast,
+    fetchAlerts
+  } = useWeatherStore();
+  const rotatingWeather = useRotatingWeather(districtWeather, currentWeather);
 
   useEffect(() => {
     alertService
@@ -41,7 +58,11 @@ export default function CitizenDashboard() {
       .then((res) => setShelters(res.data?.data?.slice(0, 4) ?? []))
       .catch(() => setShelters([]))
       .finally(() => setLoadingShelters(false));
-  }, []);
+
+    void fetchWeatherWatchlist();
+    void fetchForecast("Mumbai");
+    void fetchAlerts("Mumbai");
+  }, [fetchAlerts, fetchForecast, fetchWeatherWatchlist]);
 
   const severityColor: Record<string, string> = {
     CRITICAL: "#E53935",
@@ -52,6 +73,8 @@ export default function CitizenDashboard() {
 
   return (
     <main className="flex-grow max-w-[1440px] mx-auto w-full px-4 md:px-8 py-6">
+      <OperationalWeatherBar weather={rotatingWeather} alerts={weatherAlerts} />
+
       {/* Emergency SOS Section */}
       <section className="mb-8">
         <div className="bg-error-container p-6 rounded-xl border-2 border-error flex flex-col md:flex-row items-center justify-between gap-6">
@@ -77,6 +100,27 @@ export default function CitizenDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Left: Alerts + Shelters */}
         <div className="md:col-span-8 space-y-4">
+          {/* Citizen Weather Intelligence */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <WeatherCard weather={rotatingWeather} />
+            <div className="space-y-4">
+              <RainfallChart forecast={forecast} currentWeather={rotatingWeather} />
+              <div className="rounded-lg border border-outline-variant bg-surface-container-lowest p-4">
+                <p className="text-label-caps text-on-surface-variant">Air Quality</p>
+                <p className="mt-2 text-title-sm">AQI feed prepared</p>
+                <p className="text-body-sm text-on-surface-variant">Placeholder for future CPCB or provider air-quality integration.</p>
+              </div>
+            </div>
+          </div>
+
+          {weatherAlerts.length > 0 && (
+            <div className="space-y-2">
+              {weatherAlerts.slice(0, 2).map((alert, index) => (
+                <WeatherAlert key={alert.id ?? `${alert.title}-${index}`} alert={alert} />
+              ))}
+            </div>
+          )}
+
           {/* Active Alerts */}
           <div className="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl">
             <div className="flex items-center justify-between mb-4">
@@ -131,8 +175,8 @@ export default function CitizenDashboard() {
                 <span className="material-symbols-outlined text-primary">home_pin</span>
                 Nearby Shelters
               </h2>
-              <Link href="/dashboard/map" className="text-label-caps text-primary hover:underline">
-                VIEW MAP
+              <Link href="/shelters" className="text-label-caps text-primary hover:underline">
+                VIEW SHELTERS
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-outline-variant">
@@ -178,6 +222,8 @@ export default function CitizenDashboard() {
 
         {/* Right: Tracking + Contacts */}
         <div className="md:col-span-4 space-y-4">
+          <WeatherWidget weather={rotatingWeather} />
+
           {/* Request Tracking */}
           <div className="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl">
             <h2 className="text-title-sm flex items-center gap-1 mb-4">

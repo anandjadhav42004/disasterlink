@@ -7,6 +7,7 @@ import { useNotificationStore } from "@/store/notification-store";
 import { cn } from "@/lib/utils";
 import ProtectedRoute from "@/components/providers/protected-route";
 import { SocketBridge } from "@/components/providers/socket-bridge";
+import { usePathname } from "next/navigation";
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { sidebarOpen } = useNotificationStore();
+  const pathname = usePathname();
+
+  if (pathname.startsWith("/dashboard/map")) {
+    return <ProtectedRoute>{children}</ProtectedRoute>;
+  }
 
   return (
     <ProtectedRoute>

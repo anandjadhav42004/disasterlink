@@ -18,7 +18,20 @@ export type ServerToClientEvent =
   | "force-logout"
   | "rescue-completed"
   | "map-update"
-  | "location-update";
+  | "location-update"
+  | "weather-update"
+  | "weather-alert"
+  | "district-weather-update"
+  | "weather-map-overlay"
+  | "rainfall-warning"
+  | "heatwave-warning"
+  | "cyclone-warning"
+  | "radar-update"
+  | "storm-update"
+  | "flood-risk-update"
+  | "rainfall-alert"
+  | "weather-overlay-update"
+  | "district-risk-update";
 
 let socket: Socket | null = null;
 

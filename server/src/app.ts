@@ -19,6 +19,10 @@ import { requestRouter } from "./routes/request.routes.js";
 import { contactRouter } from "./routes/contact.routes.js";
 import { rolesRouter } from "./modules/roles/roles.routes.js";
 import { permissionsRouter } from "./modules/permissions/permissions.routes.js";
+import { weatherRouter } from "./modules/weather/weather.routes.js";
+import { startWeatherScheduler } from "./modules/weather/weather.scheduler.js";
+import { radarRouter } from "./modules/radar/radar.routes.js";
+import { startRadarScheduler } from "./modules/radar/radar.scheduler.js";
 import { initSocket } from "./sockets/index.js";
 
 const app = express();
@@ -31,7 +35,7 @@ const allowedOrigins = [
 
 const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: Number(process.env.API_RATE_LIMIT_MAX ?? (process.env.NODE_ENV === "production" ? 1000 : 5000)),
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
@@ -73,11 +77,15 @@ app.use("/api/contact", contactRouter);
 app.use("/api/map", mapRouter);
 app.use("/api/roles", rolesRouter);
 app.use("/api/permissions", permissionsRouter);
+app.use("/api/weather", weatherRouter);
+app.use("/api/radar", radarRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
 
 initSocket(server);
+startWeatherScheduler();
+startRadarScheduler();
 
 const port = Number(process.env.PORT ?? 8000);
 server.listen(port, () => logger.info(`DisasterLink API listening on ${port}`));

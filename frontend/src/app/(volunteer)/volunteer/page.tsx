@@ -1,8 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { WeatherWidget } from "@/components/weather/weather-widget";
+import { useRotatingWeather } from "@/hooks/useRotatingWeather";
+import { useWeatherStore } from "@/store/weather-store";
 
 export default function VolunteerDashboard() {
+  const { currentWeather, districtWeather, fetchWeatherWatchlist } = useWeatherStore();
+  const rotatingWeather = useRotatingWeather(districtWeather, currentWeather);
+
+  useEffect(() => {
+    void fetchWeatherWatchlist();
+  }, [fetchWeatherWatchlist]);
+
   return (
     <main className="flex-grow max-w-[1440px] mx-auto w-full px-4 md:px-8 py-6">
       {/* Header */}
@@ -78,6 +89,24 @@ export default function VolunteerDashboard() {
 
         {/* Right: Team + Status */}
         <div className="lg:col-span-4 space-y-6">
+          <WeatherWidget weather={rotatingWeather} />
+
+          <div className="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl">
+            <h3 className="text-label-caps text-on-surface-variant mb-3">ROUTE WEATHER RISK</h3>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-md bg-surface-container-low p-2"><p className="text-mono-data">{rotatingWeather?.visibility ?? "--"} km</p><p className="text-[10px] text-on-surface-variant">Visibility</p></div>
+              <div className="rounded-md bg-surface-container-low p-2"><p className="text-mono-data">{rotatingWeather?.rainfallProbability ?? "--"}%</p><p className="text-[10px] text-on-surface-variant">Rain</p></div>
+              <div className="rounded-md bg-surface-container-low p-2"><p className="text-mono-data">{rotatingWeather?.windSpeed ?? "--"}</p><p className="text-[10px] text-on-surface-variant">Wind</p></div>
+            </div>
+            <p className="mt-3 text-body-sm text-on-surface-variant">
+              {rotatingWeather?.severity === "CRITICAL"
+                ? "Critical field conditions. Confirm command clearance before deployment."
+                : rotatingWeather?.severity === "SEVERE"
+                  ? "Severe weather near deployment zone. Use guarded routing and team check-ins."
+                  : "Weather conditions are acceptable for standard field operations."}
+            </p>
+          </div>
+
           {/* Team Chat */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-xl">
             <div className="p-4 border-b border-outline-variant"><h3 className="text-title-sm flex items-center gap-2"><span className="material-symbols-outlined text-secondary">forum</span>Team Comms</h3></div>

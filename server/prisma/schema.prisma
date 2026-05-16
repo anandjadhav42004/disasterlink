@@ -264,6 +264,168 @@ model Alert {
   createdAt DateTime @default(now())
 }
 
+model WeatherSnapshot {
+  id                  String         @id @default(uuid())
+  city                String
+  district            String
+  country             String         @default("India")
+  latitude            Float
+  longitude           Float
+  temperature         Float
+  feelsLike           Float
+  humidity            Int
+  windSpeed           Float
+  visibility          Float
+  pressure            Float
+  uvIndex             Float
+  condition           String
+  icon                String?
+  severity            String
+  rainfallProbability Float?
+  provider            String         @default("weatherstack")
+  raw                 Json           @default("{}")
+  forecast            Json?
+  observedAt          DateTime       @default(now())
+  createdAt           DateTime       @default(now())
+  alerts              WeatherAlert[]
+
+  @@index([city])
+  @@index([district])
+  @@index([severity])
+  @@index([observedAt])
+}
+
+model WeatherAlert {
+  id         String           @id @default(uuid())
+  city       String
+  district   String
+  country    String           @default("India")
+  title      String
+  message    String
+  severity   String
+  type       String
+  status     String           @default("active")
+  latitude   Float?
+  longitude  Float?
+  source     String           @default("weatherstack")
+  snapshotId String?
+  snapshot   WeatherSnapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  metadata   Json             @default("{}")
+  createdAt  DateTime         @default(now())
+  resolvedAt DateTime?
+
+  @@index([city])
+  @@index([district])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model WeatherEvent {
+  id        String   @id @default(uuid())
+  eventType String
+  city      String?
+  district  String?
+  severity  String?
+  payload   Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([eventType])
+  @@index([city])
+  @@index([district])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+model RadarSnapshot {
+  id               String   @id @default(uuid())
+  provider         String   @default("rainviewer")
+  version          String?
+  generatedAt      DateTime
+  host             String
+  latestFrameTime  DateTime?
+  frames           Json     @default("{}")
+  tileTemplate     String
+  coverageTemplate String
+  raw              Json     @default("{}")
+  createdAt        DateTime @default(now())
+
+  @@index([provider])
+  @@index([generatedAt])
+  @@index([latestFrameTime])
+  @@index([createdAt])
+}
+
+model FloodRiskZone {
+  id                 String    @id @default(uuid())
+  district           String
+  state              String?
+  latitude           Float
+  longitude          Float
+  probability        Float
+  severity           String
+  triggers           Json      @default("[]")
+  recommendedActions Json      @default("[]")
+  status             String    @default("active")
+  payload            Json      @default("{}")
+  createdAt          DateTime  @default(now())
+  resolvedAt         DateTime?
+
+  @@index([district])
+  @@index([state])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+  @@index([latitude, longitude])
+}
+
+model StormEvent {
+  id                String   @id @default(uuid())
+  name              String
+  severity          String
+  intensity         Float
+  direction         Float
+  speedKmph         Float
+  centroidLat       Float
+  centroidLng       Float
+  trajectory        Json     @default("[]")
+  affectedDistricts Json     @default("[]")
+  projectedImpact   String
+  payload           Json     @default("{}")
+  createdAt         DateTime @default(now())
+
+  @@index([severity])
+  @@index([createdAt])
+  @@index([centroidLat, centroidLng])
+}
+
+model OperationalRisk {
+  id                    String   @id @default(uuid())
+  district              String
+  state                 String?
+  latitude              Float
+  longitude             Float
+  score                 Float
+  level                 String
+  rainIntensity         Float
+  windSpeed             Float
+  floodProbability      Float
+  sosDensity            Float
+  shelterOccupancy      Float
+  volunteerAvailability Float
+  incidentSeverity      Float
+  recommendations       Json     @default("[]")
+  payload               Json     @default("{}")
+  calculatedAt          DateTime @default(now())
+
+  @@index([district])
+  @@index([state])
+  @@index([level])
+  @@index([score])
+  @@index([calculatedAt])
+  @@index([latitude, longitude])
+}
+
 model ContactInquiry {
   id        String   @id @default(uuid())
   name      String
